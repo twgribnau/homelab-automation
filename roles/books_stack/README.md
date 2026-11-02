@@ -5,5 +5,5 @@ library in the browser and synced to a Kobo. Books in `books-ingest` are importe
 
 - **Runs:** with `homelab_books: true` (the default). Tag: `books`.
 - **Settings:** `defaults/main.yml`: the image version.
-- **Note:** on every network as plain http (a Kobo can't run Tailscale), and over Tailscale HTTPS
-  on `:8443`. The login, Kobo sync and users are set by `app_config`.
+- **Note:** plain http on the LAN address, so a Kobo can sync (it can't run Tailscale). The
+  login, Kobo sync and users are set by `app_config`.

@@ -90,7 +90,7 @@ services:
     environment:
       PUID: "{{ homelab_uid }}"
       PGID: "{{ homelab_gid }}"
-      HOMEPAGE_ALLOWED_HOSTS: "{{ homelab_host }},{{ homelab_host }}:{{ homelab_ports.homepage }}"
+      HOMEPAGE_ALLOWED_HOSTS: "{{ homelab_lan_ip }},{{ homelab_lan_ip }}:{{ homelab_ports.homepage }}"
     volumes:
       - {{ homelab_stack_dirs.monitoring }}/appdata/homepage:/app/config
     ports:

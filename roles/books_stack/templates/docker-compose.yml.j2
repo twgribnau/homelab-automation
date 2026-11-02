@@ -21,5 +21,5 @@ services:
       - {{ homelab_data_dir }}/media/books:/calibre-library
       - {{ homelab_data_dir }}/books-ingest:/cwa-book-ingest
     ports:
-      - "{{ homelab_calibre_publish_ip }}:{{ homelab_ports.calibre }}:8083"
+      - "{{ homelab_publish_ip }}:{{ homelab_ports.calibre }}:8083"
     restart: unless-stopped

@@ -26,7 +26,7 @@ services:
       - {{ homelab_stack_dirs.media }}/appdata/jellyfin:/config
       - {{ homelab_data_dir }}/media:/data/media:ro
     ports:
-      - "{{ homelab_jellyfin_publish_ip }}:{{ homelab_ports.jellyfin }}:8096"
+      - "{{ homelab_publish_ip }}:{{ homelab_ports.jellyfin }}:8096"
     healthcheck:
       test:
         - "CMD"

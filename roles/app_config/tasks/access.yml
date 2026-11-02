@@ -47,34 +47,3 @@
     label: "{{ item.item.key }}"
   when: item.json.authenticationMethod | lower != 'forms'
   no_log: true
-
-- name: Read the Docker network
-  community.docker.docker_network_info:
-    name: "{{ homelab_docker_network }}"
-  register: _app_config_network
-
-# Tailscale HTTPS reaches the apps through the Docker network's gateway. Trusting it makes
-# them honour X-Forwarded-Proto, so their login redirect stays on https.
-- name: Trust Tailscale HTTPS as a proxy
-  servarr_resource:
-    url: "{{ app_config_urls[item.key] }}"
-    api_key: "{{ _app_config_api_keys[item.key] }}"
-    api_version: "{{ item.value.api }}"
-    endpoint: config/host
-    singleton: true
-    body:
-      trustedNetworks: "{{ _app_config_network.network.IPAM.Config[0].Gateway }}"
-  loop: "{{ app_config_servarr | dict2items }}"
-  loop_control:
-    label: "{{ item.key }}"
-  register: _app_config_trust
-
-- name: Restart the apps to apply the proxy trust
-  community.docker.docker_compose_v2:
-    project_src: "{{ homelab_stack_dirs[item.item.value.stack] }}"
-    services: ["{{ item.item.key }}"]
-    state: restarted
-    wait: true
-  loop: "{{ _app_config_trust.results | selectattr('changed') }}"
-  loop_control:
-    label: "{{ item.item.key }}"

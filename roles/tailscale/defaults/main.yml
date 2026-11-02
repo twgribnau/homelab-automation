@@ -1,16 +1,6 @@
 ---
-# Each entry serves https://<host>.<tailnet>.ts.net:<port> -> http://127.0.0.1:<target>,
-# except the apps in homelab_apps_off.
-tailscale_serve:
-  - { app: seerr, port: 443, target: "{{ homelab_ports.seerr }}" }   # Seerr on the plain https:// address
-  - { app: jellyfin, port: 8920, target: "{{ homelab_ports.jellyfin }}" }
-  - { app: calibre, port: 8443, target: "{{ homelab_ports.calibre }}" }
-  - { app: radarr, port: 7878, target: "{{ homelab_ports.radarr }}" }
-  - { app: sonarr, port: 8989, target: "{{ homelab_ports.sonarr }}" }
-  - { app: maintainerr, port: 6246, target: "{{ homelab_ports.maintainerr }}" }
-  - { app: bazarr, port: 6767, target: "{{ homelab_ports.bazarr }}" }
-  - { app: prowlarr, port: 9696, target: "{{ homelab_ports.prowlarr }}" }
-  - { app: qbittorrent, port: 8080, target: "{{ homelab_ports.qbittorrent }}" }
-  - { app: cleanuparr, port: 11011, target: "{{ homelab_ports.cleanuparr }}" }
-  - { app: grafana, port: 3000, target: "{{ homelab_ports.grafana }}" }
-  - { app: homepage, port: 3001, target: "{{ homelab_ports.homepage }}" }
+# Optional: your tailnet reaches this server on its LAN address too (a subnet route of just that
+# one address, a /32). Then one address, e.g. http://<LAN address>:8096 for Jellyfin, works at
+# home without Tailscale and away with it, and a Chromecast at home can play from it. Approve the
+# route once in the Tailscale admin console (README, One Jellyfin address).
+tailscale_lan_route: false

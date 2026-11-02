@@ -18,12 +18,41 @@
   changed_when: false
   check_mode: false
 
+# https://<host>.<tailnet>.ts.net:<homelab_web_ports> -> http://127.0.0.1:<homelab_ports>.
 - name: Publish the web UIs over Tailscale HTTPS
-  ansible.builtin.command: tailscale serve --bg --https={{ item.port }} http://127.0.0.1:{{ item.target }}
-  loop: "{{ tailscale_serve | rejectattr('app', 'in', homelab_apps_off) }}"
-  loop_control:
-    label: "https:{{ item.port }} -> 127.0.0.1:{{ item.target }}"
-  when: item.port | string not in ((_tailscale_serve.stdout | from_json).TCP | default({}))
+  ansible.builtin.command: tailscale serve --bg --https={{ homelab_web_ports[item] }} http://127.0.0.1:{{ homelab_ports[item] }}
+  loop: "{{ homelab_web_apps | reject('in', homelab_apps_off) }}"
+  when: homelab_web_ports[item] | string not in ((_tailscale_serve.stdout | from_json).TCP | default({}))
+  changed_when: true
+
+# Subnet routing needs IP forwarding; Docker turns it on as well, this keeps it on after a reboot.
+- name: Keep IP forwarding on
+  ansible.builtin.copy:
+    content: "net.ipv4.ip_forward = 1\n"
+    dest: /etc/sysctl.d/99-tailscale.conf
+    mode: "0644"
+  notify: Apply IP forwarding
+  when: tailscale_lan_route | bool
+
+- name: Read the Tailscale preferences
+  ansible.builtin.command: tailscale debug prefs
+  register: _tailscale_prefs
+  changed_when: false
+  check_mode: false
+  when: tailscale_lan_route | bool
+
+# --advertise-routes replaces the whole list, so the routes already advertised are passed along.
+# An exit node shows up as 0.0.0.0/0 and ::/0; tailscale keeps that setting by itself.
+- name: Route the LAN address over Tailscale
+  vars:
+    _routes: >-
+      {{ (_tailscale_prefs.stdout | from_json).AdvertiseRoutes | default([], true)
+         | reject('in', ['0.0.0.0/0', '::/0']) | list }}
+    _route: "{{ homelab_lan_ip }}/32"
+  ansible.builtin.command: tailscale set --advertise-routes={{ _routes | union([_route]) | join(',') }}
+  when:
+    - tailscale_lan_route | bool
+    - _route not in _routes
   changed_when: true
 
 # The server's Tailscale name (homelab.<tailnet>.ts.net), for links to the apps.

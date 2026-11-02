@@ -2,12 +2,11 @@
 # {{ ansible_managed }}
 # Links go to the Tailscale HTTPS addresses (or the LAN without Tailscale); widgets and status
 # dots reach the apps on the Docker network.
-{% set web = ('https://' if homelab_tailscale | bool else 'http://') ~ homelab_host %}
-{% set ts = homelab_tailscale | bool %}
+{% macro href(app) %}{{ homelab_web_address }}{{ '' if homelab_web_ports[app] == 443 else ':' ~ homelab_web_ports[app] }}{% endmacro %}
 - Media:
     - Jellyfin:
         icon: jellyfin.png
-        href: {{ web }}:{{ 8920 if ts else homelab_ports.jellyfin }}
+        href: {{ href('jellyfin') }}
         siteMonitor: http://jellyfin:8096
         widget:
           type: jellyfin
@@ -18,7 +17,7 @@
           enableNowPlaying: true
     - Seerr:
         icon: seerr.png
-        href: {{ web }}{{ '' if ts else ':' ~ homelab_ports.seerr }}
+        href: {{ href('seerr') }}
         siteMonitor: http://seerr:5055
         widget:
           type: seerr
@@ -27,7 +26,7 @@
 {% if homelab_books | bool %}
     - Calibre-Web:
         icon: calibre-web.png
-        href: {{ web }}:{{ 8443 if ts else homelab_ports.calibre }}
+        href: {{ href('calibre') }}
         siteMonitor: http://calibre:8083
         widget:
           type: calibreweb
@@ -39,7 +38,7 @@
 - Downloads:
     - Radarr:
         icon: radarr.png
-        href: {{ web }}:7878
+        href: {{ href('radarr') }}
         siteMonitor: http://radarr:7878
         widget:
           type: radarr
@@ -48,7 +47,7 @@
           enableQueue: true
     - Sonarr:
         icon: sonarr.png
-        href: {{ web }}:8989
+        href: {{ href('sonarr') }}
         siteMonitor: http://sonarr:8989
         widget:
           type: sonarr
@@ -58,7 +57,7 @@
 {% if homelab_bazarr | bool %}
     - Bazarr:
         icon: bazarr.png
-        href: {{ web }}:6767
+        href: {{ href('bazarr') }}
         siteMonitor: http://bazarr:6767
         widget:
           type: bazarr
@@ -67,7 +66,7 @@
 {% endif %}
     - Prowlarr:
         icon: prowlarr.png
-        href: {{ web }}:9696
+        href: {{ href('prowlarr') }}
         siteMonitor: http://prowlarr:9696
         widget:
           type: prowlarr
@@ -75,7 +74,7 @@
           key: {{ _app_config_api_keys.prowlarr }}
     - qBittorrent:
         icon: qbittorrent.png
-        href: {{ web }}:8080
+        href: {{ href('qbittorrent') }}
         siteMonitor: http://gluetun:{{ homelab_ports.qbittorrent }}
         widget:
           type: qbittorrent
@@ -84,11 +83,11 @@
           password: {{ homelab_password | to_json }}
     - Cleanuparr:
         icon: cleanuparr.png
-        href: {{ web }}:11011
+        href: {{ href('cleanuparr') }}
         siteMonitor: http://cleanuparr:11011/health
     - Maintainerr:
         icon: maintainerr.png
-        href: {{ web }}:6246
+        href: {{ href('maintainerr') }}
         siteMonitor: http://maintainerr:6246
 
 {% if homelab_monitoring | bool or (app_config_github_repo and app_config_github_token) %}
@@ -97,7 +96,7 @@
 {% if homelab_monitoring | bool %}
     - Grafana:
         icon: grafana.png
-        href: {{ web }}:3000
+        href: {{ href('grafana') }}
         siteMonitor: http://grafana:3000
         widget:
           type: grafana

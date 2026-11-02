@@ -37,7 +37,7 @@ if ! grep -qs 'homelab_tailscale: *false' config/*.yml && ! command -v tailscale
   echo "== Tailscale"
   curl -fsSL https://tailscale.com/install.sh | sh
   sudo tailscale up
-  echo "In the Tailscale admin console (DNS), turn on MagicDNS and HTTPS Certificates."
+  echo "After the playbook, approve the server's route in the Tailscale admin console (README, Away from home)."
 fi
 
 echo

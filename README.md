@@ -4,7 +4,7 @@
 
 Ansible for a single Ubuntu home server: request a movie or series, it downloads and shows up
 in Jellyfin. The playbook installs the apps below in Docker, connects them to each other and
-publishes their web UIs over Tailscale HTTPS, or on the LAN.
+publishes their web UIs on your home network, and over Tailscale away from home.
 
 | | |
 |---|---|
@@ -42,16 +42,19 @@ and your VPN's WireGuard config as `~/homelab-config/wg0.conf` (see [Your config
 `setup.sh` asks nothing. It installs Ansible and Tailscale (unless `homelab_tailscale: false`),
 links `~/homelab-config` as `config/` and encrypts your secrets with a new vault password,
 which it shows once (save it in your password manager). The playbook then installs everything.
-Both can be run again. With Tailscale, first turn on MagicDNS and HTTPS Certificates in its
-[admin console](https://login.tailscale.com/admin/dns) (DNS). Afterwards the apps are at:
+Both can be run again. Give the server a fixed address in your router first (a DHCP
+reservation). Afterwards the apps are at `http://<server-ip>:<port>`:
 
-| App | With Tailscale | Without |
-|---|---|---|
-| Seerr (request movies and series) | `https://<server>.<tailnet>.ts.net` | `http://<server-ip>:5055` |
-| Jellyfin (watch) | `https://<server>.<tailnet>.ts.net:8920`, and `http://<server-ip>:8096` at home | `http://<server-ip>:8096` |
-| Homepage (every app on one page) | `:3001` | `:3001` |
-| Calibre-Web (ebooks) | `https://<server>.<tailnet>.ts.net:8443`, and `http://<server-ip>:8083` at home | `http://<server-ip>:8083` |
-| Radarr `:7878`, Sonarr `:8989`, Bazarr `:6767`, Prowlarr `:9696`, qBittorrent `:8080`, Cleanuparr `:11011`, Maintainerr `:6246`, Grafana `:3000` | | |
+| App | Port |
+|---|---|
+| Seerr (request movies and series) | `:5055` |
+| Jellyfin (watch) | `:8096` |
+| Homepage (every app on one page) | `:3001` |
+| Calibre-Web (ebooks) | `:8083` |
+| Radarr `:7878`, Sonarr `:8989`, Bazarr `:6767`, Prowlarr `:9696`, qBittorrent `:8080`, Cleanuparr `:11011`, Maintainerr `:6246`, Grafana `:3000` | |
+
+With Tailscale the same addresses work away from home: approve the server's route once (see
+[Away from home](#away-from-home)).
 
 Log in with the username and password from your `vault.yml`.
 
@@ -93,7 +96,7 @@ Choose in `config/settings.yml`, then run the playbook again.
 | Want | Do |
 |---|---|
 | A VPN for downloads | Put your provider's WireGuard config in `config/wg0.conf` and run `./setup.sh` (it encrypts it). Without it qBittorrent downloads from your own IP address. A port forwarded by the provider: `vault_torrent_port` |
-| No Tailscale | `homelab_tailscale: false`: every web UI on the LAN at `http://<server-ip>:<port>`, nothing from outside |
+| No Tailscale | `homelab_tailscale: false`: the apps only at home, nothing from outside |
 | No subtitles | `homelab_bazarr: false` |
 | No graphs | `homelab_monitoring: false` (Grafana, Prometheus) |
 | No start page | `homelab_homepage: false` |
@@ -147,25 +150,24 @@ All optional; without them nothing of it is installed. None of the above needs G
   from `main` they follow it again. In Telegram: `/hold`, and `/main` to deploy `main` now.
 - **GitHub card on Homepage** (`vault_github_token`, with automatic deploys): a read-only
   fine-grained token (Actions, Contents, Pull requests) for your fork.
-- **One Jellyfin address** (`tailscale_lan_route`, see below): the same address in the Jellyfin
-  app at home and away, and casting to a Chromecast at home.
+- **Away from home** (Tailscale, on unless `homelab_tailscale: false`, see below): the same
+  addresses at home and away, and casting to a Chromecast at home.
 - **Offsite backup** (`homelab_backup_remote`, see below): every night the app data and the
   ebook library, encrypted, to the cloud.
 
-### One Jellyfin address
+### Away from home
 
-**Why:** a Chromecast plays from the address the Jellyfin app uses, and a Chromecast is not on
-your tailnet and asks Google's DNS, not yours. So a `ts.net` or home DNS name gets as far as
-"Ready to cast" and then nothing plays. The server's LAN address does work for it, so that is the
-one address: at home the phone reaches it over Wi-Fi, away Tailscale routes it to the server.
-Only that one address is routed (a /32), not your home network.
+Tailscale routes the server's LAN address to it: only that one address (a /32), not your home
+network. So `http://<LAN address>:<port>` is the one address for every app, at home over Wi-Fi
+and away with Tailscale on. A Chromecast plays from that address too; it isn't on your tailnet
+and asks Google's DNS, so a `ts.net` or home DNS name gets as far as "Ready to cast" and then
+nothing plays.
 
-**Turn it on:**
+**Set it up:**
 
 1. Give the server a fixed address in your router (a DHCP reservation).
-2. In `config/settings.yml`: `tailscale_lan_route: true`, then run the playbook. It keeps IP
-   forwarding on and adds `<LAN address>/32` to the routes the server advertises; other routes
-   and exit-node settings stay as they are.
+2. Run the playbook. It keeps IP forwarding on and adds `<LAN address>/32` to the routes the
+   server advertises; other routes and exit-node settings stay as they are.
 3. Approve the route once: [admin console](https://login.tailscale.com/admin/machines) → the
    server → *Edit route settings* → tick the route. Or let it approve itself with
    [`autoApprovers`](https://tailscale.com/kb/1337/policy-syntax#autoapprovers) in your
@@ -173,9 +175,8 @@ Only that one address is routed (a /32), not your home network.
 4. In the Jellyfin app: one server, `http://<LAN address>:8096` (e.g. `http://192.168.1.51:8096`).
 
 **Use it:** at home, Tailscale off: everything over Wi-Fi, and the cast button plays on the
-Chromecast. Away, Tailscale on: the same server in the app. In the Android Tailscale app,
-*Use Tailscale subnets* must be on (the default). Casting to a Chromecast away from home is not
-part of this.
+Chromecast. Away, Tailscale on: the same addresses. In the Android Tailscale app, *Use Tailscale
+subnets* must be on (the default). Casting to a Chromecast away from home is not part of this.
 
 **Test it:** at home, Tailscale off, cast a video: it should play on the TV. Then on mobile data
 with Tailscale on, open the app: the same server loads and plays. Checks on the server:
@@ -185,11 +186,7 @@ must say approved, not "awaiting approval".
 **Not working?** Away: is Tailscale on and the route approved, and does the server still have that
 LAN address? At home: is the phone on Wi-Fi (not mobile data) and on the same network as the
 Chromecast? With an access-control policy of your own, it must allow your devices to reach
-`<LAN address>:8096`.
-
-**Undo:** `tailscale_lan_route: false`, then on the server
-`sudo tailscale set --advertise-routes=` (with your other routes after the `=`, if you have any),
-and remove `/etc/sysctl.d/99-tailscale.conf` (Docker keeps forwarding on regardless).
+`<LAN address>`.
 
 ### Offsite backup
 
@@ -249,7 +246,7 @@ The linked folders have a short README of their own.
 | [`roles/homelab_common`](roles/homelab_common) | Shared Docker network and the `/data` folders |
 | [`roles/download_stack`](roles/download_stack), [`media_stack`](roles/media_stack), [`books_stack`](roles/books_stack), [`monitoring_stack`](roles/monitoring_stack) | One Docker Compose project each |
 | [`roles/app_config`](roles/app_config) | Configures and connects the apps through their APIs, one task file per app |
-| [`roles/tailscale`](roles/tailscale) | Keeps Tailscale updated, publishes the web UIs with `tailscale serve` |
+| [`roles/tailscale`](roles/tailscale) | Keeps Tailscale updated, routes the server's LAN address over it |
 | [`library/`](library) | Ansible modules for the Radarr/Sonarr/Prowlarr and qBittorrent APIs and Calibre-Web's database |
 | [`filter_plugins/`](filter_plugins) | Password hash for qBittorrent's first-start config, Bazarr's settings form |
 | [`roles/autodeploy`](roles/autodeploy) | Automatic deploys (Extras) |

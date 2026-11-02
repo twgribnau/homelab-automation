@@ -1,8 +1,8 @@
 ---
 # {{ ansible_managed }}
-# Links go to the Tailscale HTTPS addresses (or the LAN without Tailscale); widgets and status
-# dots reach the apps on the Docker network.
-{% macro href(app) %}{{ homelab_web_address }}{{ '' if homelab_web_ports[app] == 443 else ':' ~ homelab_web_ports[app] }}{% endmacro %}
+# Links go to the server's LAN address; widgets and status dots reach the apps on the Docker
+# network.
+{% macro href(app) %}http://{{ homelab_lan_ip }}:{{ homelab_ports[app] }}{% endmacro %}
 - Media:
     - Jellyfin:
         icon: jellyfin.png

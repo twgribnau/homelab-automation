@@ -32,9 +32,6 @@ sudo rm -rf /var/lib/docker /var/lib/containerd /etc/docker \
   /etc/apt/keyrings/docker.asc /etc/apt/sources.list.d/docker.sources
 sudo groupdel docker 2>/dev/null || true
 
-echo "Removing the Tailscale HTTPS addresses (Tailscale itself stays)..."
-sudo tailscale serve reset
-
 echo "Removing app data..."
 if $keep_media; then
   sudo find "$srv" -mindepth 1 -maxdepth 1 ! -name media-data -exec rm -rf {} +

@@ -65,8 +65,11 @@ homelab_apps_off: >-
 homelab_publish_ip: "{{ '127.0.0.1' if homelab_tailscale | bool else '0.0.0.0' }}"
 homelab_jellyfin_publish_ip: 0.0.0.0
 homelab_calibre_publish_ip: 0.0.0.0
+# The server's address on your home network: the one it reaches the internet with. Give it a
+# fixed lease in your router (a DHCP reservation), or it may change.
+homelab_lan_ip: "{{ ansible_facts.default_ipv4.address }}"
 # The name in the apps' links: the Tailscale name, else the server's LAN address.
-homelab_host: "{{ tailscale_host if homelab_tailscale | bool else ansible_facts.default_ipv4.address }}"
+homelab_host: "{{ tailscale_host if homelab_tailscale | bool else homelab_lan_ip }}"
 
 # Host ports. qBittorrent's must equal its internal WebUI port (Host-header check).
 homelab_ports:
@@ -83,6 +86,29 @@ homelab_ports:
   calibre: 8083
   cleanuparr: 11011
   maintainerr: 6246
+# Over Tailscale HTTPS each web UI is on the same port, except these.
+homelab_tailscale_ports:
+  seerr: 443   # the plain https:// address
+  jellyfin: 8920
+  calibre: 8443
+# Links to the web UIs: this address and port (none for 443).
+homelab_web_address: "{{ ('https://' if homelab_tailscale | bool else 'http://') ~ homelab_host }}"
+homelab_web_ports: "{{ homelab_ports | combine(homelab_tailscale_ports) if homelab_tailscale | bool else homelab_ports }}"
+# Every web UI, in this order in the bookmarks; Tailscale serves each over HTTPS. Except the
+# ones in homelab_apps_off.
+homelab_web_apps:
+  - seerr
+  - jellyfin
+  - calibre
+  - radarr
+  - sonarr
+  - maintainerr
+  - bazarr
+  - prowlarr
+  - qbittorrent
+  - cleanuparr
+  - grafana
+  - homepage
 
 # Peer port qBittorrent listens on inside the VPN. A port forwarded by the VPN provider
 # (AirVPN: Client Area > Ports) in the vault makes it reachable for other peers.

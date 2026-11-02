@@ -6,12 +6,8 @@
 <DL><p>
     <DT><H3>Homelab</H3>
     <DL><p>
-{% for app in tailscale_serve | rejectattr('app', 'in', homelab_apps_off) %}
-{%   if homelab_tailscale | bool %}
-        <DT><A HREF="https://{{ homelab_host }}{{ '' if app.port == 443 else ':' ~ app.port }}">{{ app_config_app_names[app.app] | default(app.app | capitalize) }}</A>
-{%   else %}
-        <DT><A HREF="http://{{ homelab_host }}:{{ homelab_ports[app.app] }}">{{ app_config_app_names[app.app] | default(app.app | capitalize) }}</A>
-{%   endif %}
+{% for app in homelab_web_apps | reject('in', homelab_apps_off) %}
+        <DT><A HREF="{{ homelab_web_address }}{{ '' if homelab_web_ports[app] == 443 else ':' ~ homelab_web_ports[app] }}">{{ app_config_app_names[app] | default(app | capitalize) }}</A>
 {% endfor %}
     </DL><p>
 </DL><p>

@@ -14,3 +14,12 @@ tailscale_serve:
   - { app: cleanuparr, port: 11011, target: "{{ homelab_ports.cleanuparr }}" }
   - { app: grafana, port: 3000, target: "{{ homelab_ports.grafana }}" }
   - { app: homepage, port: 3001, target: "{{ homelab_ports.homepage }}" }
+
+# Optional: your tailnet reaches this server on its LAN address too (a subnet route of just that
+# one address, a /32). Then one address, e.g. http://<LAN address>:8096 for Jellyfin, works at
+# home without Tailscale and away with it, and a Chromecast at home can play from it. Approve the
+# route once in the Tailscale admin console (README, One Jellyfin address).
+tailscale_lan_route: false
+# The LAN address to route: by default the one the server reaches the internet with. Give it a
+# fixed lease in your router, or the route points to the wrong place after a change.
+tailscale_lan_ip: "{{ ansible_facts.default_ipv4.address }}"

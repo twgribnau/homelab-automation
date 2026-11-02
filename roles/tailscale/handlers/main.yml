@@ -1,0 +1,4 @@
+---
+- name: Apply IP forwarding
+  ansible.builtin.command: sysctl --load=/etc/sysctl.d/99-tailscale.conf
+  changed_when: true

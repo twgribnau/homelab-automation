@@ -147,8 +147,49 @@ All optional; without them nothing of it is installed. None of the above needs G
   from `main` they follow it again. In Telegram: `/hold`, and `/main` to deploy `main` now.
 - **GitHub card on Homepage** (`vault_github_token`, with automatic deploys): a read-only
   fine-grained token (Actions, Contents, Pull requests) for your fork.
+- **One Jellyfin address** (`tailscale_lan_route`, see below): the same address in the Jellyfin
+  app at home and away, and casting to a Chromecast at home.
 - **Offsite backup** (`homelab_backup_remote`, see below): every night the app data and the
   ebook library, encrypted, to the cloud.
+
+### One Jellyfin address
+
+**Why:** a Chromecast plays from the address the Jellyfin app uses, and a Chromecast is not on
+your tailnet and asks Google's DNS, not yours. So a `ts.net` or home DNS name gets as far as
+"Ready to cast" and then nothing plays. The server's LAN address does work for it, so that is the
+one address: at home the phone reaches it over Wi-Fi, away Tailscale routes it to the server.
+Only that one address is routed (a /32), not your home network.
+
+**Turn it on:**
+
+1. Give the server a fixed address in your router (a DHCP reservation).
+2. In `config/settings.yml`: `tailscale_lan_route: true`, then run the playbook. It keeps IP
+   forwarding on and adds `<LAN address>/32` to the routes the server advertises; other routes
+   and exit-node settings stay as they are.
+3. Approve the route once: [admin console](https://login.tailscale.com/admin/machines) → the
+   server → *Edit route settings* → tick the route. Or let it approve itself with
+   [`autoApprovers`](https://tailscale.com/kb/1337/policy-syntax#autoapprovers) in your
+   tailnet policy.
+4. In the Jellyfin app: one server, `http://<LAN address>:8096` (e.g. `http://192.168.1.51:8096`).
+
+**Use it:** at home, Tailscale off: everything over Wi-Fi, and the cast button plays on the
+Chromecast. Away, Tailscale on: the same server in the app. In the Android Tailscale app,
+*Use Tailscale subnets* must be on (the default). Casting to a Chromecast away from home is not
+part of this.
+
+**Test it:** at home, Tailscale off, cast a video: it should play on the TV. Then on mobile data
+with Tailscale on, open the app: the same server loads and plays. Checks on the server:
+`tailscale debug prefs | grep -A2 AdvertiseRoutes` shows the route, and in the admin console it
+must say approved, not "awaiting approval".
+
+**Not working?** Away: is Tailscale on and the route approved, and does the server still have that
+LAN address? At home: is the phone on Wi-Fi (not mobile data) and on the same network as the
+Chromecast? With an access-control policy of your own, it must allow your devices to reach
+`<LAN address>:8096`.
+
+**Undo:** `tailscale_lan_route: false`, then on the server
+`sudo tailscale set --advertise-routes=` (with your other routes after the `=`, if you have any),
+and remove `/etc/sysctl.d/99-tailscale.conf` (Docker keeps forwarding on regardless).
 
 ### Offsite backup
 

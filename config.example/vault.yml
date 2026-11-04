@@ -31,6 +31,12 @@ vault_github_token: ""
 # watch history.
 # vault_jellyfin_users:
 #   - { name: viewer, password: "" }
+# With homelab_suggestarr (settings.yml): a free TMDb API key (themoviedb.org, Settings, API),
+# and optionally a Simkl app's Client ID (simkl.com/settings/developer, type "TV, devices &
+# command line") to add your Simkl history, and an OMDb key (omdbapi.com) to filter on IMDb too.
+# vault_tmdb_api_key: ""
+# vault_simkl_client_id: ""
+# vault_omdb_api_key: ""
 # Optional, with homelab_backup_remote (settings.yml): the rclone remote for the offsite backup,
 # as `rclone config show` prints it (README, Offsite backup). Google Drive, for example:
 # vault_rclone_config: |

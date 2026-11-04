@@ -6,7 +6,7 @@ differs is changed, so a second run changes nothing.
 
 - **Runs:** always; each app's tasks only when that app is on. Tag: `apps`, or one app:
   `qbittorrent`, `jellyfin`, `arrs`, `prowlarr`, `cleanuparr`, `recyclarr`, `seerr`,
-  `maintainerr`, `bazarr`, `calibre`, `homepage`, `bookmarks`.
+  `maintainerr`, `bazarr`, `suggestarr`, `calibre`, `homepage`.
 - **Settings:** `defaults/main.yml` (what you may change, e.g. size limits, subtitle languages,
   Jellyfin's home screen); your own values go in `config/` (see `config.example/`).
   `vars/main.yml` holds the fixed wiring between the apps.

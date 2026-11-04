@@ -89,6 +89,11 @@ app_config_subsource_api_key: "{{ vault_subsource_api_key | default('') }}"
 app_config_github_repo: "{{ homelab_repo | regex_replace('^git@[^:]+:', '') | regex_replace('\\.git$', '') }}"
 app_config_github_token: "{{ vault_github_token | default('') }}"
 
+# More links for the Accounts tab on Homepage, e.g. where your VPN login lives (group and icon
+# are optional; the group is Other by default):
+#   [{ group: Network, name: AirVPN, url: "https://airvpn.org" }]
+app_config_accounts: []
+
 # Prowlarr's indexers (the sites it searches), from config/indexers.yml. Indexers you add in
 # Prowlarr itself are kept. Example: config.example/indexers.yml
 app_config_prowlarr_indexers: []
@@ -115,6 +120,9 @@ app_config_jellyfin_profile_tiles: false
 # Optional: a profile picture per user, a file in config/ (config.example/jellyfin.yml). Set when
 # the user has none yet.
 app_config_jellyfin_images: {}
+# Plugins from Jellyfin's catalog, by name, installed when missing. With a Simkl app in the vault
+# (vault_simkl_client_id): Simkl, which logs what you watch to simkl.com.
+app_config_jellyfin_plugins: "{{ ['Simkl'] if app_config_simkl_client_id else [] }}"
 # More users besides your login, from the vault (config.example/vault.yml): created when
 # missing, not admins, with every library and their own watch history. Users you add in
 # Jellyfin itself are left alone.
@@ -147,3 +155,22 @@ app_config_recyclarr_preferred_size: 15
 app_config_recyclarr_max_size:
   720p: 30
   1080p: 50
+
+# SuggestArr's TMDb key (required for it), Simkl app and OMDb key (IMDb ratings), from the vault.
+app_config_tmdb_api_key: "{{ vault_tmdb_api_key | default('') }}"
+app_config_simkl_client_id: "{{ vault_simkl_client_id | default('') }}"
+app_config_omdb_api_key: "{{ vault_omdb_api_key | default('') }}"
+# SuggestArr's filters (optional app, homelab_suggestarr): a TMDb score of 60+ with 200+ votes,
+# with an OMDb key also IMDb 7.0+ with 1000+ votes, nothing you have or requested, and every
+# suggestion waits for your approval.
+# The Jellyfin user whose watching your suggestions follow.
+app_config_suggestarr_jellyfin_user: "{{ homelab_username }}"
+app_config_suggestarr_settings:
+  FILTER_TMDB_THRESHOLD: 60
+  FILTER_TMDB_MIN_VOTES: 200
+  FILTER_IMDB_THRESHOLD: 70
+  FILTER_IMDB_MIN_VOTES: 1000
+  FILTER_INCLUDE_NO_RATING: false
+  EXCLUDE_DOWNLOADED: true
+  EXCLUDE_REQUESTED: true
+  REQUIRE_REQUEST_APPROVAL: true

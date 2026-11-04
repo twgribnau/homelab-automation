@@ -16,6 +16,7 @@
     - appdata/maintainerr
     - appdata/recyclarr
     - appdata/bazarr
+    - appdata/suggestarr
 
 - name: Deploy docker-compose.yml
   ansible.builtin.template:

@@ -41,6 +41,7 @@ homelab_bazarr: true       # subtitles
 homelab_monitoring: true   # Grafana and Prometheus
 homelab_homepage: true     # a start page with every app
 homelab_books: true        # ebooks, synced to a Kobo
+homelab_suggestarr: false  # suggestions from what you watch
 # The web UIs are at http://<LAN address>:<port>. With Tailscale also away from home: it routes
 # that address to the server (README, Away from home). Without it only at home.
 homelab_tailscale: true
@@ -53,13 +54,6 @@ homelab_lock: /run/lock/homelab.lock
 homelab_state_dir: /var/lib/homelab
 # qBittorrent behind a WireGuard VPN, when there is a config/wg0.conf.
 homelab_vpn: "{{ (homelab_config_dir ~ '/wg0.conf') is file }}"
-# The optional web UIs that are off, left out of the bookmarks.
-homelab_apps_off: >-
-  {{ (['bazarr'] if not homelab_bazarr | bool else [])
-     + (['grafana'] if not homelab_monitoring | bool else [])
-     + (['homepage'] if not homelab_homepage | bool else [])
-     + (['calibre'] if not homelab_books | bool else []) }}
-
 # The server's address on your home network: the one it reaches the internet with. Give it a
 # fixed lease in your router (a DHCP reservation), or it may change.
 homelab_lan_ip: "{{ ansible_facts.default_ipv4.address }}"
@@ -82,20 +76,7 @@ homelab_ports:
   calibre: 8083
   cleanuparr: 11011
   maintainerr: 6246
-# Every web UI, in this order in the bookmarks.
-homelab_web_apps:
-  - seerr
-  - jellyfin
-  - calibre
-  - radarr
-  - sonarr
-  - maintainerr
-  - bazarr
-  - prowlarr
-  - qbittorrent
-  - cleanuparr
-  - grafana
-  - homepage
+  suggestarr: 5000
 
 # Peer port qBittorrent listens on inside the VPN. A port forwarded by the VPN provider
 # (AirVPN: Client Area > Ports) in the vault makes it reachable for other peers.

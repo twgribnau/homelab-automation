@@ -1,6 +1,6 @@
 ---
-# Homepage's apps, with the API keys the tasks before this one read. Homepage reads the file
-# on every page load, so it needs no restart.
+# Homepage's apps, with the API keys the tasks before this one read, and the accounts. Homepage
+# reads the files on every page load, so it needs no restart.
 - name: Homepage | Write the apps and their widgets
   ansible.builtin.template:
     src: homepage-services.yaml.j2
@@ -9,3 +9,83 @@
     group: "{{ homelab_gid }}"
     mode: "0600"
   no_log: true
+
+# Its name, for the link to your bot.
+- name: Homepage | Read the Telegram bot
+  ansible.builtin.uri:
+    url: "https://api.telegram.org/bot{{ homelab_telegram_bot_token }}/getMe"
+  register: _app_config_telegram_bot
+  check_mode: false
+  when: homelab_telegram | bool
+  no_log: true
+
+# The accounts outside this server that it uses, by what they are for, so you know where each
+# login lives; plus your own (app_config_accounts).
+- name: Homepage | Write the accounts
+  vars:
+    _rclone: "{{ vault_rclone_config | default('') if homelab_backup_remote else '' }}"
+    _accounts:
+      - group: Network
+        name: Router
+        url: "http://{{ ansible_facts.default_ipv4.gateway }}"
+        icon: router.png
+        used: true
+      - group: Network
+        name: Tailscale
+        url: "https://login.tailscale.com/admin/machines"
+        icon: tailscale.png
+        used: "{{ homelab_tailscale | bool }}"
+      - group: Control
+        name: Telegram bot
+        url: "https://t.me/{{ _app_config_telegram_bot.json.result.username | default('') }}"
+        icon: telegram.png
+        used: "{{ homelab_telegram | bool }}"
+      - group: Control
+        name: GitHub
+        url: "https://github.com/{{ app_config_github_repo }}"
+        icon: github.png
+        used: "{{ app_config_github_repo | length > 0 }}"
+      - group: Suggestions
+        name: Simkl
+        url: "https://simkl.com/settings/developer/"
+        icon: simkl.png
+        used: "{{ app_config_simkl_client_id | length > 0 }}"
+      - group: Suggestions
+        name: TMDb
+        url: "https://www.themoviedb.org/settings/api"
+        icon: tmdb.png
+        used: "{{ homelab_suggestarr | bool }}"
+      - group: Suggestions
+        name: OMDb
+        url: "https://www.omdbapi.com/apikey.aspx"
+        used: "{{ homelab_suggestarr | bool and app_config_omdb_api_key | length > 0 }}"
+      - group: Subtitles
+        name: OpenSubtitles
+        url: "https://www.opensubtitles.com"
+        used: "{{ homelab_bazarr | bool and app_config_opensubtitles_username | length > 0 }}"
+      - group: Subtitles
+        name: SubDL
+        url: "https://subdl.com"
+        icon: subdl.png
+        used: "{{ homelab_bazarr | bool and app_config_subdl_api_key | length > 0 }}"
+      - group: Subtitles
+        name: Subsource
+        url: "https://subsource.net"
+        used: "{{ homelab_bazarr | bool and app_config_subsource_api_key | length > 0 }}"
+      - group: Backup
+        name: Google Drive
+        url: "https://drive.google.com"
+        icon: google-drive.png
+        used: "{{ 'type = drive' in _rclone }}"
+      - group: Backup
+        name: Google Cloud
+        url: "https://console.cloud.google.com/apis/credentials"
+        icon: google-cloud.png
+        used: "{{ 'apps.googleusercontent.com' in _rclone }}"
+    _app_config_accounts: "{{ _accounts | selectattr('used') | list + app_config_accounts }}"
+  ansible.builtin.template:
+    src: homepage-bookmarks.yaml.j2
+    dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/bookmarks.yaml"
+    owner: "{{ homelab_uid }}"
+    group: "{{ homelab_gid }}"
+    mode: "0644"

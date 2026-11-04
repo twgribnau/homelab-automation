@@ -10,13 +10,14 @@
   ansible.builtin.import_tasks: qbittorrent.yml
   tags: qbittorrent
 
-# Also with --tags homepage or maintainerr: these read the API keys those need.
+# Also with --tags homepage, maintainerr or suggestarr: these read the API keys those need.
 - name: Jellyfin
   ansible.builtin.import_tasks: jellyfin.yml
   tags:
     - jellyfin
     - homepage
     - maintainerr
+    - suggestarr
 
 - name: Radarr and Sonarr
   ansible.builtin.import_tasks: arrs.yml
@@ -40,6 +41,7 @@
     - seerr
     - homepage
     - maintainerr
+    - suggestarr
 
 - name: Maintainerr
   ansible.builtin.import_tasks: maintainerr.yml
@@ -52,20 +54,15 @@
     - bazarr
     - homepage
 
+- name: SuggestArr
+  ansible.builtin.import_tasks: suggestarr.yml
+  when: homelab_suggestarr | bool
+  tags: suggestarr
+
 - name: Calibre-Web
   ansible.builtin.import_tasks: calibre.yml
   when: homelab_books | bool
   tags: calibre
-
-# Every web UI at the address that works for you, to import in your browser.
-- name: Bookmarks file
-  ansible.builtin.template:
-    src: bookmarks.html.j2
-    dest: "{{ homelab_base_dir }}/bookmarks.html"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
-    mode: "0644"
-  tags: bookmarks
 
 - name: Homepage
   ansible.builtin.import_tasks: homepage.yml

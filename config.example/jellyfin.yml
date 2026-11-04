@@ -14,3 +14,8 @@
 # A profile picture per user, a JPEG or PNG in this folder. Set when the user has none yet.
 # app_config_jellyfin_images:
 #   admin: images/admin.jpg
+
+# Plugins from Jellyfin's catalog (Dashboard, Plugins, Catalog), by name; installed when missing.
+# With vault_simkl_client_id this is [Simkl]: log in at Dashboard, Plugins, Simkl, and leave its
+# import into Jellyfin off, or Maintainerr removes what you watched elsewhere long ago.
+# app_config_jellyfin_plugins: [Simkl]

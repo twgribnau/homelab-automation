@@ -1,0 +1,18 @@
+---
+# {{ ansible_managed }}
+# The accounts outside this server that it uses, by what they are for, in their own tab.
+{% set groups = _app_config_accounts | map(attribute='group', default='Other') | unique | list %}
+{% for group in groups %}
+- {{ group }}:
+{% for account in _app_config_accounts if account.group | default('Other') == group %}
+    - {{ account.name }}:
+        - href: {{ account.url }}
+{% if account.icon is defined %}
+          icon: {{ account.icon }}
+{% else %}
+          abbr: {{ account.name[:2] }}
+{% endif %}
+{% endfor %}
+{% else %}
+[]
+{% endfor %}

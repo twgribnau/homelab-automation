@@ -1,0 +1,169 @@
+---
+# Your login, Jellyfin, Seerr, TMDb, Simkl and OMDb, and the filters (app_config_suggestarr_settings).
+# Suggestions wait for your approval before they go to Seerr. Jobs, and linking your Simkl
+# account (a PIN, Profile), you do in SuggestArr itself.
+
+- name: SuggestArr | Check the TMDb key
+  ansible.builtin.assert:
+    that: app_config_tmdb_api_key | length > 0
+    fail_msg: SuggestArr needs vault_tmdb_api_key in config/vault.yml (a free key, README).
+    quiet: true
+
+- name: SuggestArr | Wait for it to start
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.suggestarr }}/api/auth/status"
+  register: _app_config_suggestarr_status
+  until: _app_config_suggestarr_status.status == 200
+  retries: 30
+  delay: 2
+  check_mode: false
+
+- name: SuggestArr | Your login
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.suggestarr }}/api/auth/setup"
+    method: POST
+    body_format: json
+    body:
+      username: "{{ homelab_username }}"
+      password: "{{ homelab_password }}"
+    status_code: 201
+  when: not _app_config_suggestarr_status.json.auth_setup_complete
+  changed_when: true
+  no_log: true
+
+- name: SuggestArr | Log in
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.suggestarr }}/api/auth/login"
+    method: POST
+    body_format: json
+    body:
+      username: "{{ homelab_username }}"
+      password: "{{ homelab_password }}"
+  register: _app_config_suggestarr_login
+  check_mode: false
+  no_log: true
+
+- name: SuggestArr | Read the settings
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.suggestarr }}/api/config/fetch"
+    headers:
+      Authorization: "Bearer {{ _app_config_suggestarr_login.json.access_token }}"
+  register: _app_config_suggestarr_config
+  check_mode: false
+  no_log: true
+
+# A save replaces every setting, so the ones you set in SuggestArr are sent along.
+- name: SuggestArr | Settings
+  vars:
+    _current: "{{ _app_config_suggestarr_config.json | dict2items | rejectattr('key', 'eq', 'integrations') | items2dict }}"
+    _wanted: >-
+      {{ app_config_suggestarr_settings | combine({
+           'SETUP_COMPLETED': true,
+           'SELECTED_SERVICE': 'jellyfin',
+           'JELLYFIN_API_URL': 'http://jellyfin:8096',
+           'JELLYFIN_TOKEN': _app_config_jellyfin_api_key,
+           'SEER_API_URL': 'http://seerr:5055',
+           'SEER_TOKEN': _app_config_seerr_key,
+           'TMDB_API_KEY': app_config_tmdb_api_key,
+           'SIMKL_CLIENT_ID': app_config_simkl_client_id or _current.SIMKL_CLIENT_ID | default(''),
+         }) | combine({'OMDB_API_KEY': app_config_omdb_api_key, 'FILTER_RATING_SOURCE': 'both'}
+                      if app_config_omdb_api_key else {}) }}
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.suggestarr }}/api/config/save"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ _app_config_suggestarr_login.json.access_token }}"
+    body_format: json
+    body: "{{ _current | combine(_wanted) }}"
+  when: _current | combine(_wanted) != _current
+  changed_when: true
+  no_log: true
+
+# SuggestArr makes this job at its first start, before it has your filters; it gets them here.
+# Jobs you make yourself are left alone.
+- name: SuggestArr | Read the jobs
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.suggestarr }}/api/jobs"
+    headers:
+      Authorization: "Bearer {{ _app_config_suggestarr_login.json.access_token }}"
+  register: _app_config_suggestarr_jobs
+  check_mode: false
+  no_log: true
+
+- name: SuggestArr | Your filters in its first job
+  vars:
+    _s: "{{ app_config_suggestarr_settings }}"
+    _filters: >-
+      {{ item.filters | default({}, true) | combine({
+           'vote_average_gte': _s.FILTER_TMDB_THRESHOLD / 10,
+           'vote_count_gte': _s.FILTER_TMDB_MIN_VOTES,
+           'include_no_rating': _s.FILTER_INCLUDE_NO_RATING,
+           'exclude_downloaded': _s.EXCLUDE_DOWNLOADED,
+           'exclude_requested': _s.EXCLUDE_REQUESTED,
+         }) | combine({
+           'rating_source': 'both',
+           'imdb_rating_gte': _s.FILTER_IMDB_THRESHOLD / 10,
+           'imdb_min_votes': _s.FILTER_IMDB_MIN_VOTES,
+         } if app_config_omdb_api_key else {}) }}
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.suggestarr }}/api/jobs/{{ item.id }}"
+    method: PUT
+    headers:
+      Authorization: "Bearer {{ _app_config_suggestarr_login.json.access_token }}"
+    body_format: json
+    body:
+      filters: "{{ _filters }}"
+  loop: "{{ _app_config_suggestarr_jobs.json.jobs | selectattr('name', 'equalto', 'Default Automation') }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: _filters != item.filters | default({}, true)
+  changed_when: true
+
+# Whose Jellyfin history your suggestions come from (app_config_suggestarr_jellyfin_user), and
+# with whom your Simkl history is combined.
+- name: SuggestArr | Read your account
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.suggestarr }}/api/auth/me"
+    headers:
+      Authorization: "Bearer {{ _app_config_suggestarr_login.json.access_token }}"
+  register: _app_config_suggestarr_me
+  check_mode: false
+  no_log: true
+
+- name: SuggestArr | Read your linked accounts
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.suggestarr }}/api/users/me/links"
+    headers:
+      Authorization: "Bearer {{ _app_config_suggestarr_login.json.access_token }}"
+  register: _app_config_suggestarr_links
+  check_mode: false
+  no_log: true
+
+- name: SuggestArr | Read the Jellyfin users
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Users"
+    headers:
+      Authorization: MediaBrowser Token="{{ _app_config_jellyfin_api_key }}"
+  register: _app_config_suggestarr_jf_users
+  check_mode: false
+  no_log: true
+
+- name: SuggestArr | Link your Jellyfin user
+  vars:
+    _user: >-
+      {{ _app_config_suggestarr_jf_users.json
+         | selectattr('Name', 'equalto', app_config_suggestarr_jellyfin_user) | first }}
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.suggestarr }}/api/users/{{ _app_config_suggestarr_me.json.id }}/link/jellyfin"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ _app_config_suggestarr_login.json.access_token }}"
+    body_format: json
+    body:
+      external_user_id: "{{ _user.Id }}"
+      external_username: "{{ _user.Name }}"
+  when: >-
+    _app_config_suggestarr_links.json | selectattr('provider', 'equalto', 'jellyfin')
+    | selectattr('external_username', 'equalto', app_config_suggestarr_jellyfin_user) | list | length == 0
+  changed_when: true
+  no_log: true

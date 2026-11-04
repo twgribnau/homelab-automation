@@ -85,7 +85,8 @@
   no_log: true
   when: homelab_monitoring | bool
 
-# services.yaml, with the apps and their API keys, comes from app_config (homepage.yml).
+# services.yaml (the apps and their API keys) and bookmarks.yaml (the accounts) come from
+# app_config (homepage.yml).
 - name: Deploy the Homepage settings
   ansible.builtin.copy:
     src: "homepage/{{ item }}"
@@ -96,7 +97,6 @@
   loop:
     - settings.yaml
     - widgets.yaml
-    - bookmarks.yaml
     - custom.css
   when: homelab_homepage | bool
   notify: Restart homepage

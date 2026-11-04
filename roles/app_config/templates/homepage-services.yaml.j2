@@ -23,6 +23,12 @@
           type: seerr
           url: http://seerr:5055
           key: {{ _app_config_seerr_key }}
+{% if homelab_suggestarr | bool %}
+    - SuggestArr:
+        icon: suggest-arr.png
+        href: {{ href('suggestarr') }}
+        siteMonitor: http://suggestarr:5000
+{% endif %}
 {% if homelab_books | bool %}
     - Calibre-Web:
         icon: calibre-web.png

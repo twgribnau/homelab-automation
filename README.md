@@ -10,11 +10,12 @@ publishes their web UIs on your home network, and over Tailscale away from home.
 |---|---|
 | **Watch and request** | [![Jellyfin](https://img.shields.io/badge/Jellyfin-00A4DC?style=for-the-badge&logo=jellyfin&logoColor=white)](https://jellyfin.org) [![Seerr](https://img.shields.io/badge/Seerr-5969F8?style=for-the-badge)](https://github.com/seerr-team/seerr) |
 | **Find and download** | [![Prowlarr](https://img.shields.io/badge/Prowlarr-E66000?style=for-the-badge)](https://prowlarr.com) [![Radarr](https://img.shields.io/badge/Radarr-FFCB3D?style=for-the-badge&logo=radarr&logoColor=white)](https://radarr.video) [![Sonarr](https://img.shields.io/badge/Sonarr-2596BE?style=for-the-badge&logo=sonarr&logoColor=white)](https://sonarr.tv) [![qBittorrent](https://img.shields.io/badge/qBittorrent-2F67BA?style=for-the-badge&logo=qbittorrent&logoColor=white)](https://www.qbittorrent.org) [![Cleanuparr](https://img.shields.io/badge/Cleanuparr-7C3AED?style=for-the-badge)](https://github.com/Cleanuparr/Cleanuparr) [![Maintainerr](https://img.shields.io/badge/Maintainerr-D97706?style=for-the-badge)](https://github.com/maintainerr/maintainerr) [![Recyclarr](https://img.shields.io/badge/Recyclarr-4B5563?style=for-the-badge)](https://recyclarr.dev) |
-| **Optional** | [![Bazarr](https://img.shields.io/badge/Bazarr-3A6EA5?style=for-the-badge)](https://www.bazarr.media) [![Calibre-Web](https://img.shields.io/badge/Calibre--Web-45B29D?style=for-the-badge&logo=calibreweb&logoColor=white)](https://github.com/crocodilestick/Calibre-Web-Automated) [![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white)](https://grafana.com) [![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)](https://prometheus.io) [![Homepage](https://img.shields.io/badge/Homepage-009BD5?style=for-the-badge&logo=homepage&logoColor=white)](https://gethomepage.dev) |
+| **Optional** | [![Bazarr](https://img.shields.io/badge/Bazarr-3A6EA5?style=for-the-badge)](https://www.bazarr.media) [![SuggestArr](https://img.shields.io/badge/SuggestArr-6D28D9?style=for-the-badge)](https://github.com/giuseppe99barchetta/SuggestArr) [![Calibre-Web](https://img.shields.io/badge/Calibre--Web-45B29D?style=for-the-badge&logo=calibreweb&logoColor=white)](https://github.com/crocodilestick/Calibre-Web-Automated) [![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white)](https://grafana.com) [![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)](https://prometheus.io) [![Homepage](https://img.shields.io/badge/Homepage-009BD5?style=for-the-badge&logo=homepage&logoColor=white)](https://gethomepage.dev) |
 | **Built on** | [![Ansible](https://img.shields.io/badge/Ansible-EE0000?style=for-the-badge&logo=ansible&logoColor=white)](https://www.ansible.com) [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com) [![Tailscale](https://img.shields.io/badge/Tailscale-242424?style=for-the-badge&logo=tailscale&logoColor=white)](https://tailscale.com) [![WireGuard](https://img.shields.io/badge/WireGuard-88171A?style=for-the-badge&logo=wireguard&logoColor=white)](https://www.wireguard.com) |
 
 Each optional app has its own switch ([Options](#options)): subtitles, ebooks with Kobo sync
-(Calibre-Web Automated), graphs and a start page. WireGuard is used when you add a VPN config.
+(Calibre-Web Automated), suggestions from what you watch (SuggestArr), graphs and a start page.
+WireGuard is used when you add a VPN config.
 
 Runs on an empty server and on an existing one: app data is kept and only settings that
 differ from this repo are changed. One username and password is used for every service.
@@ -49,6 +50,7 @@ reservation). Afterwards the apps are at `http://<server-ip>:<port>`:
 |---|---|
 | Seerr (request movies and series) | `:5055` |
 | Jellyfin (watch) | `:8096` |
+| SuggestArr (suggestions) | `:5000` |
 | Homepage (every app on one page) | `:3001` |
 | Calibre-Web (ebooks) | `:8083` |
 | Radarr `:7878`, Sonarr `:8989`, Bazarr `:6767`, Prowlarr `:9696`, qBittorrent `:8080`, Cleanuparr `:11011`, Maintainerr `:6246`, Grafana `:3000` | |
@@ -101,6 +103,7 @@ Choose in `config/settings.yml`, then run the playbook again.
 | No graphs | `homelab_monitoring: false` (Grafana, Prometheus) |
 | No start page | `homelab_homepage: false` |
 | No ebooks | `homelab_books: false` |
+| Suggestions | `homelab_suggestarr: true`, then set it up at `:5000` (below) |
 | Other subtitle languages | `app_config_bazarr_profile: { name: German and English, languages: [de, en] }` |
 | Indexers | `config/indexers.yml`, or add them in Prowlarr (those are kept) |
 | More settings | Any setting in `inventory/group_vars/homelab/main.yml` or `roles/*/defaults/main.yml` |
@@ -110,6 +113,16 @@ More subtitles: an [opensubtitles.com](https://www.opensubtitles.com) account
 [SubDL](https://subdl.com) and [Subsource](https://subsource.net) (`vault_subdl_api_key`,
 `vault_subsource_api_key`) in the vault.
 
+SuggestArr needs a free [TMDb API key](https://www.themoviedb.org/settings/api) in the vault
+(`vault_tmdb_api_key`); the playbook connects it to Jellyfin and Seerr, and every suggestion waits
+for your approval. To add your [Simkl](https://simkl.com) history: a Simkl app's Client ID
+(`vault_simkl_client_id`, app type "TV, devices & command line"), and the playbook installs
+Jellyfin's Simkl plugin and gives SuggestArr the app. Link your Simkl account in both once, with a
+PIN: Jellyfin (Dashboard, Plugins, Simkl; leave its import off) and SuggestArr (Profile).
+Suggestions follow `app_config_suggestarr_jellyfin_user` (your login by default). An [OMDb
+key](https://www.omdbapi.com/apikey.aspx) (`vault_omdb_api_key`) also filters on IMDb ratings. Jobs
+you make in SuggestArr.
+
 ## Usage
 
 ```bash
@@ -118,12 +131,9 @@ ansible-playbook provision.yml
 ```
 
 - Run part of it with `--tags docker|download|media|books|monitoring|apps|tailscale`, or one app with
-  `--tags qbittorrent|jellyfin|arrs|prowlarr|cleanuparr|recyclarr|seerr|maintainerr|bazarr|calibre|homepage|bookmarks`.
+  `--tags qbittorrent|jellyfin|arrs|prowlarr|cleanuparr|recyclarr|seerr|maintainerr|bazarr|suggestarr|calibre|homepage`.
 - Preview with `--check --diff` (once Docker is installed).
 - `./reset.sh` wipes the server back to Ubuntu + Tailscale (`--keep-media` keeps the library).
-- Bookmarks for every web UI, at the address that works for you: `~/srv/bookmarks.html` on the
-  server. Copy it with `scp <server>:srv/bookmarks.html .` and import it in your browser
-  (Bookmarks, Import, HTML file).
 - Family members only need a Jellyfin user, with their own watch history: `vault_jellyfin_users`
   in the vault, or make one in Jellyfin (Dashboard, Users). They log in with it on the TV.
 - Ebooks: put them in `~/srv/media-data/books-ingest`; Calibre-Web imports them into the library.
@@ -262,13 +272,14 @@ The linked folders have a short README of their own.
 | Prowlarr | Your indexers (`config/indexers.yml`), FlareSolverr, sync to Radarr/Sonarr |
 | Cleanuparr | Your login, qBittorrent, Radarr/Sonarr; removes downloads stuck on metadata (15 min) or stalled (30 min), then Radarr/Sonarr search again |
 | Recyclarr | TRaSH Guides 1080p quality profiles (stock profiles removed), custom formats and naming |
-| Jellyfin | Admin account, more users (`vault_jellyfin_users`), optionally profile tiles, pictures and one home screen (`config/jellyfin.yml`), libraries, hardware transcoding, API key for Radarr/Sonarr |
+| Jellyfin | Admin account, more users (`vault_jellyfin_users`), optionally profile tiles, pictures, one home screen and plugins (`config/jellyfin.yml`), libraries, hardware transcoding, API key for Radarr/Sonarr |
 | Seerr | Jellyfin login, Radarr/Sonarr as default servers, optionally the discover languages and streaming region (`app_config_seerr_discover`) |
 | Maintainerr | Jellyfin, Radarr, Sonarr, Seerr and Telegram, and your rule groups from `config/maintainerr.yml` (the example removes what has been watched, via a "Leaving soon" collection in Jellyfin). It has no login |
 | Bazarr | Radarr/Sonarr connection, subtitles for everything in your languages (`app_config_bazarr_profile`, English by default), OpenSubtitles, SubDL and Subsource (optional, account or key in the vault). Optional (`homelab_bazarr`) |
+| SuggestArr | Optional (`homelab_suggestarr`): your login, Jellyfin (and whose watching it follows), Seerr, TMDb, Simkl and OMDb, filters (`app_config_suggestarr_settings`), approval before anything is requested |
 | Calibre-Web | Optional (`homelab_books`): your login instead of the default admin, Kobo sync with the Kobo store passed through, more users and their Kobo tokens (`vault_calibre_users`) |
 | Grafana | Optional (`homelab_monitoring`): Prometheus datasource and one Homelab dashboard (server and containers) as home page |
-| Homepage | Optional (`homelab_homepage`): every app with a link and a live widget (queues, streams, downloads), server load |
+| Homepage | Optional (`homelab_homepage`): every app with a link and a live widget (queues, streams, downloads), server load, and an Accounts tab with the outside services it uses (add your own: `app_config_accounts`) |
 
 Anything not managed here, such as extra Jellyfin users and libraries or indexers you add by hand,
 is left alone. Settings that are managed here are set back on the next run.

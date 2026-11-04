@@ -142,6 +142,20 @@ services:
     restart: unless-stopped
 
 {% endif %}
+{% if homelab_suggestarr | bool %}
+  # Suggestions from what you watch in Jellyfin, sent to Seerr once you approve them.
+  suggestarr:
+    image: {{ media_stack_images.suggestarr }}
+    environment:
+      TZ: {{ homelab_tz }}
+      SUGGESTARR_PORT: "5000"
+    volumes:
+      - {{ homelab_stack_dirs.media }}/appdata/suggestarr:/app/config/config_files
+    ports:
+      - "{{ homelab_publish_ip }}:{{ homelab_ports.suggestarr }}:5000"
+    restart: unless-stopped
+
+{% endif %}
   # Syncs TRaSH Guides profiles, custom formats and naming into Radarr and Sonarr.
   # Its config is written by the app_config role, which knows the API keys.
   recyclarr:

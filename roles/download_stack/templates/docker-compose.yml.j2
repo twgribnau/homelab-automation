@@ -42,9 +42,12 @@ services:
       - "{{ homelab_publish_ip }}:{{ homelab_ports.qbittorrent }}:{{ homelab_ports.qbittorrent }}"
 {% else %}
     network_mode: service:gluetun
+    # Not service_healthy: when the VPN is slow to come up (no internet during the nightly
+    # backup), compose would leave qBittorrent stopped for good. Gluetun's firewall blocks
+    # traffic without the VPN, and autoheal restarts qBittorrent until it is up.
     depends_on:
       gluetun:
-        condition: service_healthy
+        condition: service_started
 {% endif %}
     environment:
       PUID: "{{ homelab_uid }}"

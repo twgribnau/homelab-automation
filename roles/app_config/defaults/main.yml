@@ -120,9 +120,24 @@ app_config_jellyfin_profile_tiles: false
 # Optional: a profile picture per user, a file in config/ (config.example/jellyfin.yml). Set when
 # the user has none yet.
 app_config_jellyfin_images: {}
-# Plugins from Jellyfin's catalog, by name, installed when missing. With a Simkl app in the vault
-# (vault_simkl_client_id): Simkl, which logs what you watch to simkl.com.
-app_config_jellyfin_plugins: "{{ ['Simkl'] if app_config_simkl_client_id else [] }}"
+# Plugins by name, from Jellyfin's catalog or the repositories below, installed when missing.
+# Intro Skipper finds intros and credits so you can skip them. Jellyfin Enhanced adds features to
+# Jellyfin's web interface (press ? in Jellyfin), connected to Seerr so you can request from
+# search. With a Simkl app in the vault (vault_simkl_client_id): Simkl, which logs what you
+# watch to simkl.com.
+app_config_jellyfin_plugins: >-
+  {{ ['Intro Skipper', 'Jellyfin Enhanced'] + (['Simkl'] if app_config_simkl_client_id else []) }}
+# Jellyfin Enhanced's settings, on top of its defaults. The rest you change in Jellyfin
+# (Dashboard, Plugins, Jellyfin Enhanced). Seerr, your TMDb key and the streaming region of
+# app_config_seerr_discover (for "Also available on") are added by the playbook.
+app_config_jellyfin_enhanced_settings:
+  QualityTagsEnabled: true   # 1080p, HDR, codec and audio on the posters
+  RatingTagsEnabled: true    # TMDb and Rotten Tomatoes scores on the posters
+  ShowAwards: true           # wins and nominations on a title's page
+# Plugin repositories besides Jellyfin's own, added when missing.
+app_config_jellyfin_repositories:
+  - { Name: Intro Skipper, Url: "https://intro-skipper.org/manifest.json", Enabled: true }
+  - { Name: Jellyfin Enhanced, Url: "https://raw.githubusercontent.com/n00bcodr/jellyfin-plugins/main/manifest.json", Enabled: true }
 # More users besides your login, from the vault (config.example/vault.yml): created when
 # missing, not admins, with every library and their own watch history. Users you add in
 # Jellyfin itself are left alone.

@@ -158,3 +158,54 @@
     - _app_config_seerr_telegram.json | combine(_settings, recursive=true) != _app_config_seerr_telegram.json
   changed_when: true
   no_log: true
+
+# Jellyfin Enhanced (app_config_jellyfin_plugins): requests from Jellyfin's search through Seerr,
+# and app_config_jellyfin_enhanced_settings.
+- name: Seerr | Read the Jellyfin plugins
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Plugins"
+    headers:
+      Authorization: MediaBrowser Token="{{ _app_config_jellyfin_api_key }}"
+  register: _app_config_seerr_jf_plugins
+  check_mode: false
+  no_log: true
+  when: _app_config_jellyfin_api_key is defined
+
+- name: Seerr | Jellyfin Enhanced
+  vars:
+    _plugin: "{{ _app_config_seerr_jf_plugins.json | selectattr('Name', 'equalto', 'Jellyfin Enhanced') | first }}"
+    _url: "{{ app_config_urls.jellyfin }}/Plugins/{{ _plugin.Id }}/Configuration"
+    _auth: MediaBrowser Token="{{ _app_config_jellyfin_api_key }}"
+    # The LAN address for Seerr: the plugin calls it from Jellyfin, and its links open in your browser.
+    _settings: >-
+      {{ app_config_jellyfin_enhanced_settings | combine({
+           'JellyseerrEnabled': true,
+           'JellyseerrUrls': 'http://' ~ homelab_lan_ip ~ ':' ~ homelab_ports.seerr,
+           'JellyseerrApiKey': _app_config_seerr_key,
+           'DEFAULT_REGION': app_config_seerr_discover.streamingRegion | default('US'),
+         }) | combine({'TMDB_API_KEY': app_config_tmdb_api_key} if app_config_tmdb_api_key else {}) }}
+  when:
+    - _app_config_jellyfin_api_key is defined
+    - "'Jellyfin Enhanced' in _app_config_seerr_jf_plugins.json | map(attribute='Name')"
+  block:
+    - name: Seerr | Read Jellyfin Enhanced's settings
+      ansible.builtin.uri:
+        url: "{{ _url }}"
+        headers:
+          Authorization: "{{ _auth }}"
+      register: _app_config_seerr_je
+      check_mode: false
+      no_log: true
+
+    - name: Seerr | Save Jellyfin Enhanced's settings
+      ansible.builtin.uri:
+        url: "{{ _url }}"
+        method: POST
+        headers:
+          Authorization: "{{ _auth }}"
+        body_format: json
+        body: "{{ _app_config_seerr_je.json | combine(_settings) }}"
+        status_code: 204
+      when: _app_config_seerr_je.json | combine(_settings) != _app_config_seerr_je.json
+      changed_when: true
+      no_log: true

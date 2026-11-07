@@ -272,8 +272,8 @@ The linked folders have a short README of their own.
 | Prowlarr | Your indexers (`config/indexers.yml`), FlareSolverr, sync to Radarr/Sonarr |
 | Cleanuparr | Your login, qBittorrent, Radarr/Sonarr; removes downloads stuck on metadata (15 min) or stalled (30 min), then Radarr/Sonarr search again |
 | Recyclarr | TRaSH Guides 1080p quality profiles (stock profiles removed), custom formats and naming |
-| Jellyfin | Admin account, more users (`vault_jellyfin_users`), optionally profile tiles, pictures, one home screen and plugins (`config/jellyfin.yml`), libraries, hardware transcoding, API key for Radarr/Sonarr |
-| Seerr | Jellyfin login, Radarr/Sonarr as default servers, optionally the discover languages and streaming region (`app_config_seerr_discover`) |
+| Jellyfin | Admin account, more users (`vault_jellyfin_users`), optionally profile tiles, pictures and one home screen (`config/jellyfin.yml`), plugins (Intro Skipper, Jellyfin Enhanced, Simkl), libraries, hardware transcoding, API key for Radarr/Sonarr |
+| Seerr | Jellyfin login, Radarr/Sonarr as default servers, optionally the discover languages and streaming region (`app_config_seerr_discover`), requests from Jellyfin's search (Jellyfin Enhanced) |
 | Maintainerr | Jellyfin, Radarr, Sonarr, Seerr and Telegram, and your rule groups from `config/maintainerr.yml` (the example removes what has been watched, via a "Leaving soon" collection in Jellyfin). It has no login |
 | Bazarr | Radarr/Sonarr connection, subtitles for everything in your languages (`app_config_bazarr_profile`, English by default), OpenSubtitles, SubDL and Subsource (optional, account or key in the vault). Optional (`homelab_bazarr`) |
 | SuggestArr | Optional (`homelab_suggestarr`): your login, Jellyfin (and whose watching it follows), Seerr, TMDb, Simkl and OMDb, filters (`app_config_suggestarr_settings`), approval before anything is requested |

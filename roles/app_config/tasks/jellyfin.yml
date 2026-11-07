@@ -288,7 +288,32 @@
       when: "'servarr' in _app_config_jf_keys.json.Items | map(attribute='AppName')"
       no_log: true
 
-    # Plugins from Jellyfin's catalog (app_config_jellyfin_plugins), installed when missing.
+    - name: Jellyfin | Read the plugin repositories
+      ansible.builtin.uri:
+        url: "{{ app_config_urls.jellyfin }}/Repositories"
+        headers:
+          Authorization: "{{ _auth }}"
+      register: _app_config_jf_repos
+      check_mode: false
+
+    # A save replaces the whole list, so the repositories already there are sent along.
+    - name: Jellyfin | Plugin repositories
+      vars:
+        _missing: >-
+          {{ app_config_jellyfin_repositories | rejectattr('Url', 'in',
+             _app_config_jf_repos.json | map(attribute='Url')) | list }}
+      ansible.builtin.uri:
+        url: "{{ app_config_urls.jellyfin }}/Repositories"
+        method: POST
+        headers:
+          Authorization: "{{ _auth }}"
+        body_format: json
+        body: "{{ _app_config_jf_repos.json + _missing }}"
+        status_code: 204
+      when: _missing | length > 0
+      changed_when: true
+
+    # Plugins (app_config_jellyfin_plugins), installed when missing.
     - name: Jellyfin | Read the plugins
       ansible.builtin.uri:
         url: "{{ app_config_urls.jellyfin }}/Plugins"

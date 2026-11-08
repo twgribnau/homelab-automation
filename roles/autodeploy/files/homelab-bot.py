@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Telegram bot for the homelab: /deploy, /status, /log, /hold and /main, answered in one chat only.
+It also warns there when an app is stopped or unhealthy, and when it runs again.
 
 It long-polls Telegram, so nothing has to reach the server from outside. Messages from other
 chats are ignored, and commands older than a minute (sent while the bot was down) are
@@ -23,8 +24,10 @@ STATE = os.environ["HOMELAB_STATE_DIR"]  # the hold on automatic deploys, shared
 WEB = os.environ["HOMELAB_REPO_URL"]
 DISKS = {"System": "/", "Media": os.environ["HOMELAB_DATA_DIR"]}
 DISK_WARN = 90  # percent used
+STACK_ICONS = {"Books": "📚", "Download": "⬇️", "Media": "🎬", "Monitoring": "📊", "Home": "🏠"}
 MAX_AGE = 60  # seconds
 POLL = 50     # seconds Telegram holds getUpdates open
+CHECK = 300   # seconds between checks of the apps
 
 
 def api(method, wait=10, **params):
@@ -74,12 +77,48 @@ def held():
     return ["", f"✋ Auto-deploys on hold since {since}: {html.escape(what)}. /main puts main back."]
 
 
-def status():
-    lines = []
-    for line in sorted(run("docker", "ps", "-a", "--format", "{{.Names}}\t{{.Status}}").splitlines()):
-        name, state = line.split("\t")
+def containers():
+    """(stack, app, state, ok) for every container; "media-stack" becomes Media."""
+    form = '{{.Label "com.docker.compose.project"}}\t{{.Label "com.docker.compose.service"}}\t{{.Names}}\t{{.Status}}'
+    for line in sorted(run("docker", "ps", "-a", "--format", form).splitlines()):
+        project, service, name, state = line.split("\t")
         ok = state.startswith("Up") and "unhealthy" not in state
-        lines.append(f"{'✅' if ok else '⚠️'} {html.escape(name)}: {html.escape(state)}")
+        yield project.removesuffix("-stack").capitalize() or "Other", service or name, state, ok
+
+
+def watch(down, alerted):
+    """Warnings for apps down at two checks in a row (so not during a backup or deploy), and for
+    the ones that run again. Returns the apps down now and the warnings."""
+    now = {app: state for _, app, state, ok in containers() if not ok}
+    messages = []
+    for app, state in now.items():
+        if app in down and app not in alerted:
+            alerted.add(app)
+            messages.append(f"⚠️ <b>{html.escape(app)}</b> is down: {html.escape(state)}")
+    for app in sorted(alerted - now.keys()):
+        alerted.discard(app)
+        messages.append(f"✅ <b>{html.escape(app)}</b> runs again")
+    return set(now), messages
+
+
+def send(text):
+    api("sendMessage", chat_id=CHAT_ID, text=text, parse_mode="HTML",
+        link_preview_options={"is_disabled": True}, reply_markup=KEYBOARD)
+
+
+def status():
+    # The ones in trouble on top, with their state; then a block per stack that you can expand.
+    stacks, problems = {}, []
+    for stack, app, state, ok in containers():
+        stacks.setdefault(stack, []).append(f"{'✅' if ok else '⚠️'} {html.escape(app)}")
+        if not ok:
+            problems.append(f"⚠️ {html.escape(app)}: {html.escape(state)}")
+    total = sum(len(apps) for apps in stacks.values())
+    head = [f"✅ <b>All {total} apps running</b>"] if not problems else \
+        [f"⚠️ <b>{len(problems)} of {total} apps need attention</b>"] + problems
+    blocks = [f"<blockquote expandable>{STACK_ICONS.get(stack, '📦')} <b>{stack}</b>\n" + "\n".join(apps) + "</blockquote>"
+              for stack, apps in sorted(stacks.items())]
+    lines = head + [""] + blocks + [""]
     seen = set()
     for label, path in DISKS.items():
         if os.stat(path).st_dev in seen:  # same disk as one listed already
@@ -87,12 +126,12 @@ def status():
         seen.add(os.stat(path).st_dev)
         usage = shutil.disk_usage(path)
         used = round(usage.used / usage.total * 100)
-        lines.append(f"{'⚠️' if used >= DISK_WARN else '💾'} {label} disk: {used}% used, {usage.free / 1e9:.0f} GB free")
+        lines.append(f"{'⚠️' if used >= DISK_WARN else '💾'} <b>{label} disk</b>  {used}% used · {usage.free / 1e9:.0f} GB free")
     commit, title = run("git", "-C", REPO, "log", "-1", "--format=%H%n%s").split("\n", 1)
-    # v1.1.0, or v1.1.0 + 3 commits since that release
-    version = re.sub(r"-(\d+)-g[0-9a-f]+$", r" + \1 commits", run("git", "-C", REPO, "describe", "--tags", "--always"))
-    failed = " (a newer commit failed, see /log)" if os.path.exists(f"{REPO}/.failed-commit") else ""
-    return "\n".join(lines + ["", f"Deployed: {html.escape(version)}, {commit_link(commit)} {html.escape(title)}{failed}"]
+    # v1.1.0, or v1.1.0 + 3 since that release
+    version = re.sub(r"-(\d+)-g[0-9a-f]+$", r" + \1", run("git", "-C", REPO, "describe", "--tags", "--always"))
+    failed = "\n⚠️ A newer commit failed, see /log" if os.path.exists(f"{REPO}/.failed-commit") else ""
+    return "\n".join(lines + [f"🚀 <b>Deployed</b>  {html.escape(version)} · {commit_link(commit)} {html.escape(title)}{failed}"]
                      + held())
 
 
@@ -139,7 +178,16 @@ def answer(name):
 
 def main():
     offset = 0
+    down, alerted, checked = set(), set(), 0
     while True:
+        if time.time() - checked >= CHECK:
+            checked = time.time()
+            try:
+                down, messages = watch(down, alerted)
+                for message in messages:
+                    send(message)
+            except Exception as error:  # Telegram or Docker unreachable: try again at the next check
+                print(f"Check failed: {type(error).__name__}", flush=True)
         try:
             updates = api("getUpdates", wait=POLL + 10, offset=offset, timeout=POLL, allowed_updates=["message"])
         except Exception as error:  # a network hiccup: wait and poll again
@@ -154,8 +202,7 @@ def main():
                 continue
             print(f"Command: {name}", flush=True)
             try:
-                api("sendMessage", chat_id=CHAT_ID, text=answer(name), parse_mode="HTML",
-                    link_preview_options={"is_disabled": True}, reply_markup=KEYBOARD)
+                send(answer(name))
             except Exception as error:
                 print(f"Reply failed: {type(error).__name__}", flush=True)
 

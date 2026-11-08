@@ -40,6 +40,8 @@ services:
     env_file: grafana.env
     environment:
       GF_USERS_ALLOW_SIGN_UP: "false"
+      # No extra plugins (about 0.5 GB: CloudWatch, Loki, ...); Prometheus is built in.
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
       GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/homelab-overview.json
       TZ: {{ homelab_tz }}
     volumes:

@@ -6,4 +6,4 @@ monitoring_stack_images:
   cadvisor: gcr.io/cadvisor/cadvisor:v0.55.1
   homepage: ghcr.io/gethomepage/homepage:v2.7.0
 
-monitoring_stack_prometheus_retention: 30d
+monitoring_stack_prometheus_retention: 15d

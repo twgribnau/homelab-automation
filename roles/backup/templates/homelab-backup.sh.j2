@@ -38,9 +38,10 @@ stopped=false
 trap '$stopped && compose start' EXIT
 stopped=true
 compose stop
+# Left out: Prometheus' measurements, and Grafana's plugins (it downloads them again).
 for dir in "${backup_dirs[@]}"; do
   mkdir -p "$staging$dir"
-  rsync -a --delete --exclude prometheus/data "$dir/" "$staging$dir/" || fail "copying $dir failed"
+  rsync -a --delete --exclude prometheus/data --exclude grafana/data/plugins "$dir/" "$staging$dir/" || fail "copying $dir failed"
 done
 compose start
 stopped=false

@@ -24,6 +24,7 @@ STATE = os.environ["HOMELAB_STATE_DIR"]  # the hold on automatic deploys, shared
 WEB = os.environ["HOMELAB_REPO_URL"]
 DISKS = {"System": "/", "Media": os.environ["HOMELAB_DATA_DIR"]}
 DISK_WARN = 90  # percent used
+STACK_ICONS = {"Books": "📚", "Download": "⬇️", "Media": "🎬", "Monitoring": "📊", "Home": "🏠"}
 MAX_AGE = 60  # seconds
 POLL = 50     # seconds Telegram holds getUpdates open
 CHECK = 300   # seconds between checks of the apps
@@ -106,16 +107,18 @@ def send(text):
 
 
 def status():
-    # The apps by stack; the ones in trouble also on top, with their state.
+    # The ones in trouble on top, with their state; then a block per stack that you can expand.
     stacks, problems = {}, []
     for stack, app, state, ok in containers():
-        stacks.setdefault(stack, []).append(html.escape(app) if ok else f"⚠️{html.escape(app)}")
+        stacks.setdefault(stack, []).append(f"{'✅' if ok else '⚠️'} {html.escape(app)}")
         if not ok:
             problems.append(f"⚠️ {html.escape(app)}: {html.escape(state)}")
     total = sum(len(apps) for apps in stacks.values())
     head = [f"✅ <b>All {total} apps running</b>"] if not problems else \
         [f"⚠️ <b>{len(problems)} of {total} apps need attention</b>"] + problems
-    lines = head + [""] + [f"<b>{stack}</b>  {' · '.join(apps)}" for stack, apps in sorted(stacks.items())] + [""]
+    blocks = [f"<blockquote expandable>{STACK_ICONS.get(stack, '📦')} <b>{stack}</b>\n" + "\n".join(apps) + "</blockquote>"
+              for stack, apps in sorted(stacks.items())]
+    lines = head + [""] + blocks + [""]
     seen = set()
     for label, path in DISKS.items():
         if os.stat(path).st_dev in seen:  # same disk as one listed already

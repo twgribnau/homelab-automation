@@ -95,6 +95,10 @@
         icon: maintainerr.png
         href: {{ href('maintainerr') }}
         siteMonitor: http://maintainerr:6246
+        widget:
+          type: maintainerr
+          url: http://maintainerr:6246
+          fields: [reclaimable, itemsHandled]
 
 {% if homelab_monitoring | bool or (app_config_github_repo and app_config_github_token) %}
 - System:

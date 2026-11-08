@@ -288,6 +288,29 @@
       when: "'servarr' in _app_config_jf_keys.json.Items | map(attribute='AppName')"
       no_log: true
 
+    - name: Jellyfin | Read the branding
+      ansible.builtin.uri:
+        url: "{{ app_config_urls.jellyfin }}/System/Configuration/branding"
+        headers:
+          Authorization: "{{ _auth }}"
+      register: _app_config_jf_branding
+      check_mode: false
+      when: app_config_jellyfin_css | length > 0
+
+    - name: Jellyfin | Custom CSS
+      ansible.builtin.uri:
+        url: "{{ app_config_urls.jellyfin }}/System/Configuration/branding"
+        method: POST
+        headers:
+          Authorization: "{{ _auth }}"
+        body_format: json
+        body: "{{ _app_config_jf_branding.json | combine({'CustomCss': app_config_jellyfin_css | trim}) }}"
+        status_code: 204
+      when:
+        - app_config_jellyfin_css | length > 0
+        - _app_config_jf_branding.json.CustomCss | default('') != app_config_jellyfin_css | trim
+      changed_when: true
+
     - name: Jellyfin | Read the plugin repositories
       ansible.builtin.uri:
         url: "{{ app_config_urls.jellyfin }}/Repositories"

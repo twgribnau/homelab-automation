@@ -100,6 +100,7 @@
     - custom.css
   when: homelab_homepage | bool
   notify: Restart homepage
+  tags: homepage  # also with --tags homepage, like the tiles (app_config)
 
 - name: Deploy docker-compose.yml
   ansible.builtin.template:

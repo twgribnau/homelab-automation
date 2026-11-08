@@ -66,8 +66,15 @@ jobs:
           vault_homelab_password: Test-password-123
           vault_admin_email: test@example.com
           vault_backup_password: test
+          vault_tmdb_api_key: test
+          vault_simkl_client_id: test
+          vault_omdb_api_key: test
           VAULT
-          echo 'homelab_tailscale: false' >config/settings.yml
+          # Every option on that the VM can run, so a release is tested whole.
+          cat >config/settings.yml <<'SETTINGS'
+          homelab_tailscale: false
+          homelab_suggestarr: true
+          SETTINGS
           cp config.example/maintainerr.yml config/   # the example rules are tested too
 
       - name: Setup

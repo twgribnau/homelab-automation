@@ -15,6 +15,10 @@
 # app_config_jellyfin_images:
 #   admin: images/admin.jpg
 
+# Custom CSS, for example the ElegantFin theme (github.com/lscambo13/ElegantFin):
+# app_config_jellyfin_css: |
+#   @import url("https://cdn.jsdelivr.net/gh/lscambo13/ElegantFin@main/Theme/ElegantFin-jellyfin-theme-build-latest-minified.css");
+
 # Plugins from Jellyfin's catalog (Dashboard, Plugins, Catalog), by name; installed when missing.
 # By default Intro Skipper and Jellyfin Enhanced, plus Simkl with vault_simkl_client_id: log in
 # at Dashboard, Plugins, Simkl, and leave its import into Jellyfin off, or Maintainerr removes

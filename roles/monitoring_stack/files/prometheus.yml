@@ -1,6 +1,8 @@
+# A measurement a minute is plenty for a homelab and keeps the data small (datasources.yml
+# has the same interval for Grafana).
 global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+  scrape_interval: 60s
+  evaluation_interval: 60s
 
 scrape_configs:
   - job_name: "prometheus"

@@ -3,7 +3,8 @@
 The server deploys itself: every 10 minutes it checks `main` on GitHub and your config repo, and
 runs the playbook when one changed. Before new images it backs up the app data locally; when
 the run fails it puts that backup and the previous commit back. With Telegram, every deploy is
-reported and a bot answers `/deploy`, `/status`, `/log`, `/hold` and `/main`.
+reported and a bot answers `/deploy`, `/status`, `/log`, `/hold` and `/main`; it also warns when
+an app is stopped or unhealthy for 5 minutes, and when it runs again.
 
 - **Runs:** when `vault_homelab_repo` is set (the SSH address of your fork). Tag: `autodeploy`.
   Add `~/.ssh/homelab_deploy.pub` (made by the first run) as a deploy key on your fork.

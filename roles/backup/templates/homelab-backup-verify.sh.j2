@@ -5,25 +5,16 @@
 # and every SQLite database in it checked. Nothing in the repository or on the apps is changed.
 # Started by homelab-backup-verify.timer; the output is in: journalctl -u homelab-backup-verify
 set -uo pipefail
+. /usr/local/lib/homelab/lib.sh
 work=""
 
-# Messages are Telegram HTML, like the autodeploy's: a bold first line, the details, then where to look.
-notify() {
-  [ -n "${TELEGRAM_BOT_TOKEN:-}" ] || return 0
-  curl -s -o /dev/null --max-time 20 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=$1" \
-    --data-urlencode "parse_mode=HTML" --data-urlencode 'link_preview_options={"is_disabled":true}'
-}
-html() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' <<<"$1"; }
 fail() { echo "$1" >&2; notify "❌ <b>Backup check failed</b>
 $(html "$1")
 journalctl -u homelab-backup-verify"; exit 1; }
 trap '[ -n "$work" ] && rm -rf "$work"' EXIT
 
 # Not while a backup or a deploy runs (the same lock as the backup).
-lock={{ homelab_lock }}
-[ -e "$lock" ] || : >"$lock"
-exec 9<"$lock"
+open_lock
 flock -w 3600 9 || fail "the backup or a deploy held the lock for an hour"
 
 restic check --read-data-subset={{ backup_verify_data_percent }}% || fail "restic found a problem in the repository"

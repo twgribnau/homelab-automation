@@ -6,29 +6,15 @@
 # {{ backup_keep_daily }} daily, {{ backup_keep_weekly }} weekly and {{ backup_keep_monthly }} monthly backups.
 # Started by homelab-backup.timer; the output is in: journalctl -u homelab-backup
 set -uo pipefail
-stacks=()
-for dir in {{ homelab_stack_dirs.values() | join(' ') }}; do [ -d "$dir" ] && stacks+=("$dir"); done  # optional ones may be off
-backup_dirs=("${stacks[@]}")
-[ -d {{ homelab_data_dir }}/media/books ] && backup_dirs+=({{ homelab_data_dir }}/media/books)
+. /usr/local/lib/homelab/lib.sh
 staging={{ backup_staging_dir }}
 
-# Messages are Telegram HTML, like the autodeploy's: a bold first line, the details, then where to look.
-notify() {
-  [ -n "${TELEGRAM_BOT_TOKEN:-}" ] || return 0
-  curl -s -o /dev/null --max-time 20 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=$1" \
-    --data-urlencode "parse_mode=HTML" --data-urlencode 'link_preview_options={"is_disabled":true}'
-}
-html() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' <<<"$1"; }
 fail() { echo "$1" >&2; notify "❌ <b>Backup failed</b>
 $(html "$1")
 journalctl -u homelab-backup"; exit 1; }
-compose() { for dir in "${stacks[@]}"; do docker compose --project-directory "$dir" "$1"; done; }
 
 # One at a time with the automatic deploys (they skip a check while this holds the lock).
-lock={{ homelab_lock }}
-[ -e "$lock" ] || : >"$lock"
-exec 9<"$lock"
+open_lock
 flock -w 3600 9 || fail "a deploy held the lock for an hour"
 # A run of the playbook by hand goes first too: wait for it, at most an hour.
 for _ in $(seq 120); do
@@ -43,13 +29,10 @@ stopped=false
 trap '$stopped && compose start' EXIT
 stopped=true
 compose stop
-# Left out: Prometheus' measurements, Grafana's plugins and Recyclarr's guides (downloaded again),
-# and Calibre-Web-Automated's zips of the books as they were imported (copies of the library).
-# --delete-excluded also removes them from the copy if an earlier backup had them.
+# Left out: what lib.sh skips. --delete-excluded also removes it from the copy if an earlier backup had it.
 for dir in "${backup_dirs[@]}"; do
   mkdir -p "$staging$dir"
-  rsync -a --delete --delete-excluded --exclude prometheus/data --exclude grafana/data/plugins \
-    --exclude calibre/processed_books --exclude recyclarr/resources "$dir/" "$staging$dir/" || fail "copying $dir failed"
+  rsync -a --delete --delete-excluded "${rsync_skip[@]}" "$dir/" "$staging$dir/" || fail "copying $dir failed"
 done
 compose start
 stopped=false

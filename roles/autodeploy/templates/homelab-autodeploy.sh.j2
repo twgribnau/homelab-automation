@@ -7,29 +7,15 @@
 set -uo pipefail
 cd {{ autodeploy_dir }} || exit 1
 # Not while the nightly backup holds the lock: the next check picks the change up.
-[ -e {{ homelab_lock }} ] || : >{{ homelab_lock }}
-exec 9<{{ homelab_lock }}
+. /usr/local/lib/homelab/lib.sh
+open_lock
 flock -n 9 || exit 0
 export GIT_SSH_COMMAND="ssh -i {{ autodeploy_key }} -o IdentitiesOnly=yes"
-stacks=()
-for dir in {{ homelab_stack_dirs.values() | join(' ') }}; do [ -d "$dir" ] && stacks+=("$dir"); done  # optional ones may be off
-# What the backup holds: the app data, and the ebook library, which holds Calibre-Web's database.
-backup_dirs=("${stacks[@]}")
-[ -d {{ homelab_data_dir }}/media/books ] && backup_dirs+=({{ homelab_data_dir }}/media/books)
 web={{ autodeploy_web_url }}
 
-# Messages are Telegram HTML: text that isn't markup goes through html first.
-notify() {
-  [ -n "${TELEGRAM_BOT_TOKEN:-}" ] || return 0
-  curl -s -o /dev/null --max-time 20 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=$1" \
-    --data-urlencode "parse_mode=HTML" --data-urlencode 'link_preview_options={"is_disabled":true}'
-}
-html() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' <<<"$1"; }
 # The release a commit belongs to: v1.1.0, or v1.1.0 + 3 commits since that tag.
 version() { git describe --tags --always "$1" | sed -E 's/-([0-9]+)-g[0-9a-f]+$/ + \1 commits/'; }
 restic() { sudo --preserve-env=RESTIC_REPOSITORY,RESTIC_PASSWORD restic "$@"; }
-compose() { for dir in "${stacks[@]}"; do docker compose --project-directory "$dir" "$1"; done; }
 deploy() {
   .venv/bin/pip install -q -r requirements.txt >"$log" 2>&1 &&
     .venv/bin/ansible-galaxy collection install -r collections/requirements.yml >>"$log" 2>&1 &&
@@ -91,8 +77,7 @@ if ! git diff --quiet HEAD FETCH_HEAD -- 'roles/*_stack/defaults/main.yml'; then
   backup=true
   restic cat config >/dev/null 2>&1 || restic init
   compose stop
-  restic backup --tag pre-deploy --exclude "*/prometheus/data" --exclude "*/grafana/data/plugins" \
-    --exclude "*/calibre/processed_books" --exclude "*/recyclarr/resources" "${backup_dirs[@]}"
+  restic backup --tag pre-deploy "${restic_skip[@]}" "${backup_dirs[@]}"
   status=$?
   compose start
   if [ "$status" -ne 0 ]; then
@@ -142,8 +127,7 @@ if $backup; then
   restore=$(sudo mktemp -d)
   restic restore latest --tag pre-deploy --target "$restore" &&
     for dir in "${backup_dirs[@]}"; do
-      sudo rsync -a --delete --exclude prometheus/data --exclude grafana/data/plugins \
-        --exclude calibre/processed_books --exclude recyclarr/resources "$restore$dir/" "$dir/"
+      sudo rsync -a --delete "${rsync_skip[@]}" "$restore$dir/" "$dir/"
     done
   sudo rm -rf "$restore"
 fi

@@ -1,0 +1,37 @@
+# {{ ansible_managed }}
+# Shared by the backup, the weekly backup check and the automatic deploys:
+#   . /usr/local/lib/homelab/lib.sh
+# Gives them the stacks, what the backup holds, the Telegram messages, and the lock they take in turns.
+
+# The stacks that are installed (optional ones may be off), and what the backup holds: their app
+# data, and the ebook library, which holds Calibre-Web's database.
+stacks=()
+for dir in {{ homelab_stack_dirs.values() | join(' ') }}; do [ -d "$dir" ] && stacks+=("$dir"); done
+backup_dirs=("${stacks[@]}")
+[ -d {{ homelab_data_dir }}/media/books ] && backup_dirs+=({{ homelab_data_dir }}/media/books)
+
+# Left out of every backup: Prometheus' measurements, and what the apps download again (Grafana's
+# plugins, Recyclarr's guides). Calibre-Web-Automated's zips of the books as they were imported are
+# copies of the library. As arguments for rsync and for restic.
+skip=(prometheus/data grafana/data/plugins recyclarr/resources calibre/processed_books)
+rsync_skip=() restic_skip=()
+for path in "${skip[@]}"; do rsync_skip+=(--exclude "$path"); restic_skip+=(--exclude "*/$path"); done
+
+compose() { for dir in "${stacks[@]}"; do docker compose --project-directory "$dir" "$1"; done; }
+
+# Messages are Telegram HTML: a bold first line with an icon, the details, then where to look.
+# Text that isn't markup goes through html first.
+notify() {
+  [ -n "${TELEGRAM_BOT_TOKEN:-}" ] || return 0
+  curl -s -o /dev/null --max-time 20 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=$1" \
+    --data-urlencode "parse_mode=HTML" --data-urlencode 'link_preview_options={"is_disabled":true}'
+}
+html() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' <<<"$1"; }
+
+# One at a time: this opens the lock on file descriptor 9, and each script then decides how long it
+# waits with flock (the deploys skip a check while another holds it, the backups wait).
+open_lock() {
+  [ -e {{ homelab_lock }} ] || : >{{ homelab_lock }}
+  exec 9<{{ homelab_lock }}
+}

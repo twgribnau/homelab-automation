@@ -20,3 +20,16 @@
     - "{{ homelab_data_dir }}/media"
     - "{{ homelab_data_dir }}/media/movies"
     - "{{ homelab_data_dir }}/media/series"
+
+# What the backup, its weekly check and the automatic deploys share (roles/backup, roles/autodeploy).
+- name: Create the folder for the shared scripts
+  ansible.builtin.file:
+    path: /usr/local/lib/homelab
+    state: directory
+    mode: "0755"
+
+- name: Install the shared shell functions
+  ansible.builtin.template:
+    src: homelab-lib.sh.j2
+    dest: /usr/local/lib/homelab/lib.sh
+    mode: "0644"

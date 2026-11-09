@@ -51,8 +51,18 @@
               + (['subsource'] if app_config_subsource_api_key else [])) | unique
               | reject('in', app_config_bazarr_providers_dead) | list }}
       # base_url "" as Bazarr stores it: it strips the trailing slash of "/".
-      radarr: { ip: radarr, port: 7878, base_url: "", ssl: false, apikey: "{{ _app_config_api_keys.radarr }}" }
-      sonarr: { ip: sonarr, port: 8989, base_url: "", ssl: false, apikey: "{{ _app_config_api_keys.sonarr }}" }
+      radarr:
+        ip: radarr
+        port: 7878
+        base_url: ""
+        ssl: false
+        apikey: "{{ _app_config_api_keys.radarr }}"
+      sonarr:
+        ip: sonarr
+        port: 8989
+        base_url: ""
+        ssl: false
+        apikey: "{{ _app_config_api_keys.sonarr }}"
       # A fresh install has no login yet; an existing one is left as it is.
       auth: >-
         {{ {'type': 'form', 'username': homelab_username, 'password': homelab_password}
@@ -63,7 +73,8 @@
       subdl: "{{ {'api_key': app_config_subdl_api_key} if app_config_subdl_api_key else {} }}"
       subsource: "{{ {'apikey': app_config_subsource_api_key} if app_config_subsource_api_key else {} }}"
       # subf2m only searches with a browser's User-Agent; without one Bazarr turns it off.
-      subf2m: { user_agent: "{{ app_config_bazarr_user_agent }}" }
+      subf2m:
+        user_agent: "{{ app_config_bazarr_user_agent }}"
     # Bazarr replaces all enabled languages and all profiles with what it gets.
     _form: >-
       {{ _wanted | bazarr_settings_form(_current)

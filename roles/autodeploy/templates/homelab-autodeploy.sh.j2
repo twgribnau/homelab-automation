@@ -7,29 +7,15 @@
 set -uo pipefail
 cd {{ autodeploy_dir }} || exit 1
 # Not while the nightly backup holds the lock: the next check picks the change up.
-[ -e {{ homelab_lock }} ] || : >{{ homelab_lock }}
-exec 9<{{ homelab_lock }}
+. /usr/local/lib/homelab/lib.sh
+open_lock
 flock -n 9 || exit 0
 export GIT_SSH_COMMAND="ssh -i {{ autodeploy_key }} -o IdentitiesOnly=yes"
-stacks=()
-for dir in {{ homelab_stack_dirs.values() | join(' ') }}; do [ -d "$dir" ] && stacks+=("$dir"); done  # optional ones may be off
-# What the backup holds: the app data, and the ebook library, which holds Calibre-Web's database.
-backup_dirs=("${stacks[@]}")
-[ -d {{ homelab_data_dir }}/media/books ] && backup_dirs+=({{ homelab_data_dir }}/media/books)
 web={{ autodeploy_web_url }}
 
-# Messages are Telegram HTML: text that isn't markup goes through html first.
-notify() {
-  [ -n "${TELEGRAM_BOT_TOKEN:-}" ] || return 0
-  curl -s -o /dev/null --max-time 20 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=$1" \
-    --data-urlencode "parse_mode=HTML" --data-urlencode 'link_preview_options={"is_disabled":true}'
-}
-html() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' <<<"$1"; }
 # The release a commit belongs to: v1.1.0, or v1.1.0 + 3 commits since that tag.
 version() { git describe --tags --always "$1" | sed -E 's/-([0-9]+)-g[0-9a-f]+$/ + \1 commits/'; }
 restic() { sudo --preserve-env=RESTIC_REPOSITORY,RESTIC_PASSWORD restic "$@"; }
-compose() { for dir in "${stacks[@]}"; do docker compose --project-directory "$dir" "$1"; done; }
 deploy() {
   .venv/bin/pip install -q -r requirements.txt >"$log" 2>&1 &&
     .venv/bin/ansible-galaxy collection install -r collections/requirements.yml >>"$log" 2>&1 &&
@@ -81,7 +67,7 @@ done)
 log=$(mktemp)
 trap 'rm -f "$log"' EXIT
 $force && [ -z "$changes" ] && changes="• back to main"
-notify "🔄 Homelab update started
+notify "🔄 <b>Update started</b>
 ${changes}"
 
 # Only new images can change the app data, so only then back up. The apps are stopped
@@ -91,13 +77,15 @@ if ! git diff --quiet HEAD FETCH_HEAD -- 'roles/*_stack/defaults/main.yml'; then
   backup=true
   restic cat config >/dev/null 2>&1 || restic init
   compose stop
-  restic backup --tag pre-deploy --exclude "*/prometheus/data" --exclude "*/grafana/data/plugins" "${backup_dirs[@]}"
+  restic backup --tag pre-deploy "${restic_skip[@]}" "${backup_dirs[@]}"
   status=$?
   compose start
   if [ "$status" -ne 0 ]; then
     echo "$new $config_new" >.failed-commit
     printf '%s\n%s\n%s\n' "$(date '+%F %R')" "$new" "The backup failed" >.last-failure
-    notify "❌ Homelab update skipped: the backup failed. journalctl -u homelab-autodeploy"
+    notify "❌ <b>Update skipped</b>
+Backup failed
+journalctl -u homelab-autodeploy"
     exit 1
   fi
   restic forget --prune --tag pre-deploy --keep-last 5
@@ -107,12 +95,13 @@ git reset --quiet --hard "$new"
 # Fast-forward only: config/ is your own folder, so changes you haven't committed stay.
 if [ "$config_new" != "$config_old" ] && ! git -C config merge --quiet --ff-only "$config_new"; then
   echo "$new $config_new" >.failed-commit
-  notify "❌ Homelab update stopped: your config repo has changes that aren't committed. Commit or undo them in ~/homelab-config."
+  notify "❌ <b>Update stopped</b>
+Uncommitted changes in ~/homelab-config"
   exit 1
 fi
 if deploy; then
   rm -f .failed-commit
-  notify "✅ Homelab updated to $(version HEAD)
+  notify "✅ <b>Updated to <a href=\"$web/commit/$new\">$(version HEAD)</a></b> in $((SECONDS / 60))m $((SECONDS % 60))s
 ${changes}"
   exit 0
 fi
@@ -138,22 +127,26 @@ if $backup; then
   restore=$(sudo mktemp -d)
   restic restore latest --tag pre-deploy --target "$restore" &&
     for dir in "${backup_dirs[@]}"; do
-      sudo rsync -a --delete --exclude prometheus/data --exclude grafana/data/plugins "$restore$dir/" "$dir/"
+      sudo rsync -a --delete "${rsync_skip[@]}" "$restore$dir/" "$dir/"
     done
   sudo rm -rf "$restore"
 fi
 if [ "$new" = "$old" ]; then
-  notify "❌ Homelab update failed: $(html "${task:-see the log}")
+  notify "❌ <b>Update failed</b>
+$(html "${task:-see the log}")
 $(html "$error")
 ${changes}
-Your config change didn't work: fix it in your config repo. journalctl -u homelab-autodeploy"
+Fix your config repo
+journalctl -u homelab-autodeploy"
   exit 1
 fi
 git reset --quiet --hard "$old"
-if deploy; then result="rolled back to the version before"; else result="the rollback failed too"; fi
+if deploy; then result="Rolled back"; else result="Rollback failed too"; fi
 
-notify "❌ Homelab update failed: $(html "${task:-see the log}")
+notify "❌ <b>Update failed</b>
+$(html "${task:-see the log}")
 $(html "$error")
 ${changes}
-${result}. Merge a fix or revert the PR. journalctl -u homelab-autodeploy"
+${result}: fix or revert the PR
+journalctl -u homelab-autodeploy"
 exit 1

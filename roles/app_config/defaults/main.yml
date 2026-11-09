@@ -59,7 +59,10 @@ app_config_telegram_events:
 # Seerr: new requests and requests it could not send to Radarr/Sonarr (2 + 16 + 128).
 app_config_seerr_telegram_types: 146
 # Optional: Seerr's defaults for discovering and where something streams, e.g.
-# { originalLanguage: "nl|en", streamingRegion: NL, discoverRegion: NL } (config.example/settings.yml).
+#   originalLanguage: "nl|en"
+#   streamingRegion: NL
+#   discoverRegion: NL
+# (config.example/settings.yml).
 app_config_seerr_discover: {}
 
 # Bazarr's language profile, the default for every movie and series. Subtitles are searched
@@ -91,7 +94,9 @@ app_config_github_token: "{{ vault_github_token | default('') }}"
 
 # More links for the Accounts tab on Homepage, e.g. where your VPN login lives (group and icon
 # are optional; the group is Other by default):
-#   [{ group: Network, name: AirVPN, url: "https://airvpn.org" }]
+#   - group: Network
+#     name: AirVPN
+#     url: "https://airvpn.org"
 app_config_accounts: []
 
 # Prowlarr's indexers (the sites it searches), from config/indexers.yml. Indexers you add in
@@ -107,8 +112,12 @@ app_config_jellyfin_language: en
 app_config_jellyfin_country: US
 # Created when missing. Libraries, users and profiles you add yourself are left alone.
 app_config_jellyfin_libraries:
-  - { name: Movies, type: movies, path: /data/media/movies }
-  - { name: Series, type: tvshows, path: /data/media/series }
+  - name: Movies
+    type: movies
+    path: /data/media/movies
+  - name: Series
+    type: tvshows
+    path: /data/media/series
 # Optional: one home screen for every user, row by row; the rest stays empty. Rows: resume
 # (Continue Watching), nextup, latestmedia (Recently Added), librarybuttons (My Media, small),
 # smalllibrarytiles, resumeaudio, resumebook, livetv. The web app and the TV apps built on it show
@@ -139,8 +148,12 @@ app_config_jellyfin_enhanced_settings:
   ShowAwards: true           # wins and nominations on a title's page
 # Plugin repositories besides Jellyfin's own, added when missing.
 app_config_jellyfin_repositories:
-  - { Name: Intro Skipper, Url: "https://intro-skipper.org/manifest.json", Enabled: true }
-  - { Name: Jellyfin Enhanced, Url: "https://raw.githubusercontent.com/n00bcodr/jellyfin-plugins/main/manifest.json", Enabled: true }
+  - Name: Intro Skipper
+    Url: "https://intro-skipper.org/manifest.json"
+    Enabled: true
+  - Name: Jellyfin Enhanced
+    Url: "https://raw.githubusercontent.com/n00bcodr/jellyfin-plugins/main/manifest.json"
+    Enabled: true
 # More users besides your login, from the vault (config.example/vault.yml): created when
 # missing, not admins, with every library and their own watch history. Users you add in
 # Jellyfin itself are left alone.

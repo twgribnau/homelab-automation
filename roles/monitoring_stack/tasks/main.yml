@@ -7,16 +7,20 @@
     group: "{{ item.owner | default(homelab_gid) }}"
     mode: "0755"
   loop:
-    - { path: "" }
-    - { path: appdata }
-    - { path: appdata/prometheus }
-    - { path: appdata/prometheus/data, owner: "{{ monitoring_stack_prometheus_uid }}" }
-    - { path: appdata/grafana }
-    - { path: appdata/grafana/data, owner: "{{ monitoring_stack_grafana_uid }}" }
-    - { path: appdata/grafana/provisioning/datasources }
-    - { path: appdata/grafana/provisioning/dashboards }
-    - { path: appdata/grafana/provisioning/alerting }
-    - { path: appdata/homepage }
+    - path: ""
+    - path: appdata
+    - path: appdata/prometheus
+    - path: appdata/prometheus/data
+      owner: "{{ monitoring_stack_prometheus_uid }}"
+    # the nightly backup writes the storage sizes here
+    - path: appdata/node-exporter
+    - path: appdata/grafana
+    - path: appdata/grafana/data
+      owner: "{{ monitoring_stack_grafana_uid }}"
+    - path: appdata/grafana/provisioning/datasources
+    - path: appdata/grafana/provisioning/dashboards
+    - path: appdata/grafana/provisioning/alerting
+    - path: appdata/homepage
   loop_control:
     label: "{{ item.path }}"
 

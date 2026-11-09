@@ -206,8 +206,8 @@ after the first time), then [restic](https://restic.net) backs up that copy (set
 history, requests) and your ebooks, encrypted with `vault_backup_password`, through
 [rclone](https://rclone.org) to Google Drive, OneDrive, Backblaze B2 or
 [another cloud](https://rclone.org/overview/). Not the movies and series: Radarr and Sonarr get
-them again. It is about 1–2 GB, and each night adds only what changed. It keeps 7 daily, 4
-weekly and 6 monthly backups, never runs at the same time as an automatic deploy, and Telegram
+them again. It is about 1–2 GB, and each night adds only what changed. It keeps 2 daily, 1
+weekly and 1 monthly backup, never runs at the same time as an automatic deploy, and Telegram
 tells you when it fails. Log: `journalctl -u homelab-backup`.
 
 For Google Drive, once:

@@ -15,13 +15,28 @@ statusStyle: dot
 # A tab per group, every tile the same size.
 useEqualHeights: true
 layout:
-  Media: { tab: Media, style: row, columns: 4 }
-  Downloads: { tab: Downloads, style: row, columns: 4 }
-  System: { tab: System, style: row, columns: 4 }
+  Media:
+    tab: Media
+    style: row
+    columns: 4
+  Downloads:
+    tab: Downloads
+    style: row
+    columns: 4
+  System:
+    tab: System
+    style: row
+    columns: 4
   # The accounts, by what they are for (app_config, homepage.yml), a column each.
-  Network: { tab: Accounts }
-  Control: { tab: Accounts }
-  Suggestions: { tab: Accounts }
-  Subtitles: { tab: Accounts }
-  Backup: { tab: Accounts }
-  Other: { tab: Accounts }
+  Network:
+    tab: Accounts
+  Control:
+    tab: Accounts
+  Suggestions:
+    tab: Accounts
+  Subtitles:
+    tab: Accounts
+  Backup:
+    tab: Accounts
+  Other:
+    tab: Accounts

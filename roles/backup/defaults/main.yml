@@ -5,6 +5,11 @@
 backup_schedule: "*-*-* 04:00:00"
 # The apps' data is copied here first (they stop only for that), then uploaded from here.
 backup_staging_dir: /backup/staging
-backup_keep_daily: 7
-backup_keep_weekly: 4
-backup_keep_monthly: 6
+backup_keep_daily: 2
+backup_keep_weekly: 1
+backup_keep_monthly: 1
+# Every week, after the backup: restic's check, and the latest backup restored to a temporary
+# folder to check its databases. A failure is sent to Telegram.
+backup_verify_schedule: "Sun *-*-* 08:00:00"
+# The share of the backup data restic reads again in its check.
+backup_verify_data_percent: 5

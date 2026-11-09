@@ -1,0 +1,51 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Checks that the backups in {{ homelab_backup_remote }} can be restored: restic's own check (with a
+# sample of the data), then the app data of the latest backup restored into a temporary folder
+# and every SQLite database in it checked. Nothing in the repository or on the apps is changed.
+# Started by homelab-backup-verify.timer; the output is in: journalctl -u homelab-backup-verify
+set -uo pipefail
+. /usr/local/lib/homelab/lib.sh
+work=""
+
+fail() { echo "$1" >&2; notify "❌ <b>Backup check failed</b>
+$(html "$1")
+journalctl -u homelab-backup-verify"; exit 1; }
+trap '[ -n "$work" ] && rm -rf "$work"' EXIT
+
+# Not while a backup or a deploy runs (the same lock as the backup).
+open_lock
+flock -w 3600 9 || fail "the backup or a deploy held the lock for an hour"
+
+restic check --read-data-subset={{ backup_verify_data_percent }}% || fail "restic found a problem in the repository"
+
+# The ebook library is left out: it is large, and the databases are what matters.
+work=$(mktemp -d /var/tmp/homelab-backup-verify.XXXXXX)
+restic restore latest --tag nightly --exclude '*/media/books' --target "$work" || fail "restoring the latest backup failed"
+
+checked=0 skipped=0 bad=""
+while IFS= read -r -d '' db; do
+  result=$(sqlite3 "$db" 'PRAGMA integrity_check;' 2>&1)
+  if [ "$result" = ok ]; then
+    checked=$((checked + 1))
+  elif [[ "$result" == *"no such tokenizer"* ]]; then
+    skipped=$((skipped + 1))   # an app's own search extension that plain sqlite3 doesn't have
+  else
+    bad+=" ${db#"$work"}"
+  fi
+done < <(find "$work" -name '*.db' -print0)
+[ "$checked" -gt 0 ] || fail "no databases found in the latest backup"
+[ -z "$bad" ] || fail "damaged databases in the backup:$bad"
+echo "Verified: $checked databases ok, $skipped skipped"
+latest=$(restic snapshots --latest 1 --tag nightly --json 2>/dev/null | grep -o '"time":"[^"]*"' | head -1 | cut -d'"' -f4)
+notify "✅ <b>Backup verified</b>
+🗄 <b>Databases</b>  $checked ok$([ "$skipped" -gt 0 ] && echo " · $skipped skipped")
+🔍 <b>Data read</b>  {{ backup_verify_data_percent }}%
+☁️ <b>Latest backup</b>  $(date -d "${latest:-now}" '+%-d %b %R')"
+{% if homelab_monitoring | bool %}
+
+# Read by node-exporter, from its own file: the backup script rewrites homelab.prom every night.
+metrics={{ homelab_stack_dirs.monitoring }}/appdata/node-exporter
+echo "homelab_backup_verify_success_time $(date +%s)" >"$metrics/homelab-verify.prom.tmp" &&
+  mv "$metrics/homelab-verify.prom.tmp" "$metrics/homelab-verify.prom"
+{% endif %}

@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Check the homelab backups every week
+
+[Timer]
+OnCalendar={{ backup_verify_schedule }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

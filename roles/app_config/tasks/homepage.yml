@@ -47,17 +47,17 @@
         used: "{{ app_config_github_repo | length > 0 }}"
       - group: Suggestions
         name: Simkl
-        url: "https://simkl.com/settings/developer/"
+        url: "https://simkl.com/my/"
         icon: simkl.png
         used: "{{ app_config_simkl_client_id | length > 0 }}"
       - group: Suggestions
         name: TMDb
-        url: "https://www.themoviedb.org/settings/api"
+        url: "https://www.themoviedb.org"
         icon: tmdb.png
         used: "{{ homelab_suggestarr | bool }}"
       - group: Suggestions
         name: OMDb
-        url: "https://www.omdbapi.com/apikey.aspx"
+        url: "https://www.omdbapi.com"
         used: "{{ homelab_suggestarr | bool and app_config_omdb_api_key | length > 0 }}"
       - group: Subtitles
         name: OpenSubtitles
@@ -79,7 +79,7 @@
         used: "{{ 'type = drive' in _rclone }}"
       - group: Backup
         name: Google Cloud
-        url: "https://console.cloud.google.com/apis/credentials"
+        url: "https://console.cloud.google.com"
         icon: google-cloud.png
         used: "{{ 'apps.googleusercontent.com' in _rclone }}"
     _app_config_accounts: "{{ _accounts | selectattr('used') | list + app_config_accounts }}"

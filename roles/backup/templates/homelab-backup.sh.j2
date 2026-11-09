@@ -6,24 +6,15 @@
 # {{ backup_keep_daily }} daily, {{ backup_keep_weekly }} weekly and {{ backup_keep_monthly }} monthly backups.
 # Started by homelab-backup.timer; the output is in: journalctl -u homelab-backup
 set -uo pipefail
-stacks=()
-for dir in {{ homelab_stack_dirs.values() | join(' ') }}; do [ -d "$dir" ] && stacks+=("$dir"); done  # optional ones may be off
-backup_dirs=("${stacks[@]}")
-[ -d {{ homelab_data_dir }}/media/books ] && backup_dirs+=({{ homelab_data_dir }}/media/books)
+. /usr/local/lib/homelab/lib.sh
 staging={{ backup_staging_dir }}
 
-notify() {
-  [ -n "${TELEGRAM_BOT_TOKEN:-}" ] || return 0
-  curl -s -o /dev/null --max-time 20 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=$1"
-}
-fail() { echo "$1" >&2; notify "❌ Homelab backup to {{ homelab_backup_remote }} failed: $1. journalctl -u homelab-backup"; exit 1; }
-compose() { for dir in "${stacks[@]}"; do docker compose --project-directory "$dir" "$1"; done; }
+fail() { echo "$1" >&2; notify "❌ <b>Backup failed</b>
+$(html "$1")
+journalctl -u homelab-backup"; exit 1; }
 
 # One at a time with the automatic deploys (they skip a check while this holds the lock).
-lock={{ homelab_lock }}
-[ -e "$lock" ] || : >"$lock"
-exec 9<"$lock"
+open_lock
 flock -w 3600 9 || fail "a deploy held the lock for an hour"
 # A run of the playbook by hand goes first too: wait for it, at most an hour.
 for _ in $(seq 120); do
@@ -38,10 +29,10 @@ stopped=false
 trap '$stopped && compose start' EXIT
 stopped=true
 compose stop
-# Left out: Prometheus' measurements, and Grafana's plugins (it downloads them again).
+# Left out: what lib.sh skips. --delete-excluded also removes it from the copy if an earlier backup had it.
 for dir in "${backup_dirs[@]}"; do
   mkdir -p "$staging$dir"
-  rsync -a --delete --exclude prometheus/data --exclude grafana/data/plugins "$dir/" "$staging$dir/" || fail "copying $dir failed"
+  rsync -a --delete --delete-excluded "${rsync_skip[@]}" "$dir/" "$staging$dir/" || fail "copying $dir failed"
 done
 compose start
 stopped=false
@@ -50,3 +41,17 @@ stopped=false
 restic backup --tag nightly "${backup_dirs[@]/#/$staging}" || fail "restic backup stopped with code $?"
 restic forget --tag nightly --prune --keep-daily {{ backup_keep_daily }} --keep-weekly {{ backup_keep_weekly }} --keep-monthly {{ backup_keep_monthly }} ||
   fail "removing old backups failed"
+{% if homelab_monitoring | bool %}
+
+# Sizes for Homepage's Storage card, read by node-exporter from this folder.
+metrics={{ homelab_stack_dirs.monitoring }}/appdata/node-exporter
+backup_size=$(restic stats --mode raw-data --json | grep -o '"total_size":[0-9]*' | cut -d: -f2)
+{
+  for dir in movies series books; do
+    [ -d {{ homelab_data_dir }}/media/$dir ] || continue
+    echo "homelab_media_bytes{dir=\"$dir\"} $(du -sb {{ homelab_data_dir }}/media/$dir | cut -f1)"
+  done
+  echo "homelab_backup_bytes ${backup_size:-0}"
+  echo "homelab_backup_success_time $(date +%s)"
+} >"$metrics/homelab.prom.tmp" && mv "$metrics/homelab.prom.tmp" "$metrics/homelab.prom"
+{% endif %}

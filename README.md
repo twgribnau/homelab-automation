@@ -1,6 +1,6 @@
-# homelab-infra
+# homelab-automation
 
-[![CI](https://img.shields.io/github/actions/workflow/status/twgribnau/homelab-infra/ci.yml?branch=main&style=flat&logo=githubactions&logoColor=white&label=CI)](https://github.com/twgribnau/homelab-infra/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/twgribnau/homelab-infra?style=flat&logo=github&logoColor=white&label=Release)](https://github.com/twgribnau/homelab-infra/releases/latest) [![Last commit](https://img.shields.io/github/last-commit/twgribnau/homelab-infra?style=flat&logo=github&logoColor=white&label=Last%20commit)](https://github.com/twgribnau/homelab-infra/commits/main) [![Renovate](https://img.shields.io/badge/Renovate-enabled-308BE3?style=flat&logo=renovate&logoColor=white)](renovate.json) [![License](https://img.shields.io/github/license/twgribnau/homelab-infra?style=flat&label=License)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/twgribnau/homelab-automation/ci.yml?branch=main&style=flat&logo=githubactions&logoColor=white&label=CI)](https://github.com/twgribnau/homelab-automation/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/twgribnau/homelab-automation?style=flat&logo=github&logoColor=white&label=Release)](https://github.com/twgribnau/homelab-automation/releases/latest) [![Last commit](https://img.shields.io/github/last-commit/twgribnau/homelab-automation?style=flat&logo=github&logoColor=white&label=Last%20commit)](https://github.com/twgribnau/homelab-automation/commits/main) [![Renovate](https://img.shields.io/badge/Renovate-enabled-308BE3?style=flat&logo=renovate&logoColor=white)](renovate.json) [![License](https://img.shields.io/github/license/twgribnau/homelab-automation?style=flat&label=License)](LICENSE)
 
 Ansible for a single Ubuntu home server: request a movie or series, it downloads and shows up
 in Jellyfin. The playbook installs the apps below in Docker, connects them to each other and
@@ -29,7 +29,7 @@ On a server with Ubuntu 26.04 and a user with `sudo`:
 
 ```bash
 sudo apt install -y git
-git clone https://github.com/twgribnau/homelab-infra.git && cd homelab-infra
+git clone https://github.com/twgribnau/homelab-automation.git && cd homelab-automation
 mkdir ~/homelab-config && cp config.example/* ~/homelab-config/
 nano ~/homelab-config/vault.yml      # your username, a password for the apps, email (see Your configuration)
 nano ~/homelab-config/settings.yml   # which optional apps you want

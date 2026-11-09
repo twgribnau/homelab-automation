@@ -152,7 +152,7 @@
     _server: "{{ _app_config_maintainerr['settings/' ~ _arr] | first }}"
     _body:
       name: "{{ _group.name }}"
-      description: From config/maintainerr.yml (homelab-infra)
+      description: From config/maintainerr.yml
       libraryId: "{{ _library.id }}"
       dataType: "{{ _group.type }}"
       isActive: true

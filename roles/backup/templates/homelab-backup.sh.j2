@@ -50,3 +50,16 @@ stopped=false
 restic backup --tag nightly "${backup_dirs[@]/#/$staging}" || fail "restic backup stopped with code $?"
 restic forget --tag nightly --prune --keep-daily {{ backup_keep_daily }} --keep-weekly {{ backup_keep_weekly }} --keep-monthly {{ backup_keep_monthly }} ||
   fail "removing old backups failed"
+{% if homelab_monitoring | bool %}
+
+# Sizes for Homepage's Storage card, read by node-exporter from this folder.
+metrics={{ homelab_stack_dirs.monitoring }}/appdata/node-exporter
+backup_size=$(restic stats --mode raw-data --json | grep -o '"total_size":[0-9]*' | cut -d: -f2)
+{
+  for dir in movies series; do
+    echo "homelab_media_bytes{dir=\"$dir\"} $(du -sb {{ homelab_data_dir }}/media/$dir | cut -f1)"
+  done
+  echo "homelab_backup_bytes ${backup_size:-0}"
+  echo "homelab_backup_success_time $(date +%s)"
+} >"$metrics/homelab.prom.tmp" && mv "$metrics/homelab.prom.tmp" "$metrics/homelab.prom"
+{% endif %}

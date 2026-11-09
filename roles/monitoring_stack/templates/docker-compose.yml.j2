@@ -65,10 +65,14 @@ services:
   # No host ports: Prometheus scrapes node-exporter:9100 and cadvisor:8080.
   node-exporter:
     image: {{ monitoring_stack_images.node_exporter }}
-    command: --path.rootfs=/host
+    command:
+      - --path.rootfs=/host
+      - --collector.textfile.directory=/textfile
     pid: host
     volumes:
       - /:/host:ro,rslave
+      # Mounted on its own: node-exporter runs as nobody and can't walk through /home/<user>.
+      - ./appdata/node-exporter:/textfile:ro
     restart: unless-stopped
 
   cadvisor:

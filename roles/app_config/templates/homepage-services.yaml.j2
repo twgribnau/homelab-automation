@@ -120,6 +120,20 @@
         widget:
           type: prometheus
           url: http://prometheus:9090
+{% if homelab_backup_remote %}
+    # Measured after each nightly backup (roles/backup).
+    - Storage:
+        icon: mdi-harddisk
+        widget:
+          type: prometheusmetric
+          url: http://prometheus:9090
+          refreshInterval: 300000
+          metrics:
+            - { label: Movies, query: 'homelab_media_bytes{dir="movies"}', format: { type: bytes } }
+            - { label: Series, query: 'homelab_media_bytes{dir="series"}', format: { type: bytes } }
+            - { label: Backups, query: homelab_backup_bytes, format: { type: bytes } }
+            - { label: Last backup, query: time() - homelab_backup_success_time, format: { type: duration } }
+{% endif %}
 {% endif %}
 {% if app_config_github_repo and app_config_github_token %}
     # The latest release, from GitHub's API with a read-only token (app_config_github_token).

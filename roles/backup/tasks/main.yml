@@ -9,12 +9,13 @@
     fail_msg: homelab_backup_remote is set, but vault_rclone_config isn't (README, Offsite backup).
     quiet: true
 
-- name: Install rclone, restic and rsync
+- name: Install rclone, restic, rsync and sqlite3
   ansible.builtin.apt:
     name:
       - rclone
       - restic
       - rsync
+      - sqlite3   # the weekly check reads the restored databases
 
 - name: Create the backup settings folder
   ansible.builtin.file:
@@ -49,6 +50,12 @@
     dest: /usr/local/bin/homelab-backup
     mode: "0755"
 
+- name: Install the weekly check script
+  ansible.builtin.template:
+    src: homelab-backup-verify.sh.j2
+    dest: /usr/local/bin/homelab-backup-verify
+    mode: "0755"
+
 - name: Install the systemd units
   ansible.builtin.template:
     src: "{{ item }}.j2"
@@ -57,10 +64,15 @@
   loop:
     - homelab-backup.service
     - homelab-backup.timer
+    - homelab-backup-verify.service
+    - homelab-backup-verify.timer
 
-- name: Start the timer
+- name: Start the timers
   ansible.builtin.systemd_service:
-    name: homelab-backup.timer
+    name: "{{ item }}"
     enabled: true
     state: started
     daemon_reload: true
+  loop:
+    - homelab-backup.timer
+    - homelab-backup-verify.timer

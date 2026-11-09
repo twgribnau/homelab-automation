@@ -91,7 +91,8 @@ if ! git diff --quiet HEAD FETCH_HEAD -- 'roles/*_stack/defaults/main.yml'; then
   backup=true
   restic cat config >/dev/null 2>&1 || restic init
   compose stop
-  restic backup --tag pre-deploy --exclude "*/prometheus/data" --exclude "*/grafana/data/plugins" "${backup_dirs[@]}"
+  restic backup --tag pre-deploy --exclude "*/prometheus/data" --exclude "*/grafana/data/plugins" \
+    --exclude "*/calibre/processed_books" --exclude "*/recyclarr/resources" "${backup_dirs[@]}"
   status=$?
   compose start
   if [ "$status" -ne 0 ]; then
@@ -141,7 +142,8 @@ if $backup; then
   restore=$(sudo mktemp -d)
   restic restore latest --tag pre-deploy --target "$restore" &&
     for dir in "${backup_dirs[@]}"; do
-      sudo rsync -a --delete --exclude prometheus/data --exclude grafana/data/plugins "$restore$dir/" "$dir/"
+      sudo rsync -a --delete --exclude prometheus/data --exclude grafana/data/plugins \
+        --exclude calibre/processed_books --exclude recyclarr/resources "$restore$dir/" "$dir/"
     done
   sudo rm -rf "$restore"
 fi

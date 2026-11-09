@@ -43,10 +43,13 @@ stopped=false
 trap '$stopped && compose start' EXIT
 stopped=true
 compose stop
-# Left out: Prometheus' measurements, and Grafana's plugins (it downloads them again).
+# Left out: Prometheus' measurements, Grafana's plugins and Recyclarr's guides (downloaded again),
+# and Calibre-Web-Automated's zips of the books as they were imported (copies of the library).
+# --delete-excluded also removes them from the copy if an earlier backup had them.
 for dir in "${backup_dirs[@]}"; do
   mkdir -p "$staging$dir"
-  rsync -a --delete --exclude prometheus/data --exclude grafana/data/plugins "$dir/" "$staging$dir/" || fail "copying $dir failed"
+  rsync -a --delete --delete-excluded --exclude prometheus/data --exclude grafana/data/plugins \
+    --exclude calibre/processed_books --exclude recyclarr/resources "$dir/" "$staging$dir/" || fail "copying $dir failed"
 done
 compose start
 stopped=false

@@ -1,6 +1,6 @@
 ---
-# The server's own copy of the repo. Deploys run from here, never from your working copy.
-autodeploy_dir: "{{ homelab_base_dir }}/homelab-infra"
+# The server's own copy of the repo, named like it. Deploys run from here, never from your working copy.
+autodeploy_dir: "{{ homelab_base_dir }}/{{ homelab_repo | basename | regex_replace('\\.git$', '') }}"
 autodeploy_interval: 10min
 autodeploy_key: "/home/{{ homelab_user }}/.ssh/homelab_deploy"
 # restic repository for the backup taken before each deploy. A folder now; later for example

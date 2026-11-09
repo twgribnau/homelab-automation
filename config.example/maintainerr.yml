@@ -11,7 +11,7 @@
 # episode is unmonitored and its files deleted, so neither comes back.
 #
 # These two remove what has been watched: by whoever requested it in Seerr, or by anyone when
-# nobody requested it; favourites never. Movies 14 days after the last view; series per
+# nobody requested it; favourites never. Movies 1 day after the last view; series per
 # complete season, 3 days after its last episode. Then 7 days in "Leaving soon".
 app_config_maintainerr_rule_groups:
   - name: Leaving soon (movies)
@@ -44,7 +44,7 @@ app_config_maintainerr_rule_groups:
               action: BEFORE
               customValue:
                 type: custom_days
-                value: "14"
+                value: "1"
         - "3":
             - operator: AND
               firstValue: Jellyfin.favoritedBy

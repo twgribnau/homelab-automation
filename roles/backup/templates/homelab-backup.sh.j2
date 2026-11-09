@@ -61,7 +61,8 @@ restic forget --tag nightly --prune --keep-daily {{ backup_keep_daily }} --keep-
 metrics={{ homelab_stack_dirs.monitoring }}/appdata/node-exporter
 backup_size=$(restic stats --mode raw-data --json | grep -o '"total_size":[0-9]*' | cut -d: -f2)
 {
-  for dir in movies series; do
+  for dir in movies series books; do
+    [ -d {{ homelab_data_dir }}/media/$dir ] || continue
     echo "homelab_media_bytes{dir=\"$dir\"} $(du -sb {{ homelab_data_dir }}/media/$dir | cut -f1)"
   done
   echo "homelab_backup_bytes ${backup_size:-0}"

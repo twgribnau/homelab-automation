@@ -36,7 +36,9 @@ groups:
         for: 5m
         data:
           - refId: A
-            relativeTimeRange: { from: 300, to: 0 }
+            relativeTimeRange:
+              from: 300
+              to: 0
             datasourceUid: eg2fl62nqc2yoa
             model:
               refId: A
@@ -62,7 +64,9 @@ groups:
         for: 5m
         data:
           - refId: A
-            relativeTimeRange: { from: 300, to: 0 }
+            relativeTimeRange:
+              from: 300
+              to: 0
             datasourceUid: eg2fl62nqc2yoa
             model:
               refId: A
@@ -90,7 +94,9 @@ groups:
         for: 0s
         data:
           - refId: A
-            relativeTimeRange: { from: 900, to: 0 }
+            relativeTimeRange:
+              from: 900
+              to: 0
             datasourceUid: eg2fl62nqc2yoa
             model:
               refId: A

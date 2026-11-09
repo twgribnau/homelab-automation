@@ -16,9 +16,18 @@ app_config_urls:
 
 # API version, Compose stack, and the config file holding the API key each app generates.
 app_config_servarr:
-  radarr: { api: v3, stack: media, config: "{{ homelab_stack_dirs.media }}/appdata/radarr/config.xml" }
-  sonarr: { api: v3, stack: media, config: "{{ homelab_stack_dirs.media }}/appdata/sonarr/config.xml" }
-  prowlarr: { api: v1, stack: download, config: "{{ homelab_stack_dirs.download }}/appdata/prowlarr/config.xml" }
+  radarr:
+    api: v3
+    stack: media
+    config: "{{ homelab_stack_dirs.media }}/appdata/radarr/config.xml"
+  sonarr:
+    api: v3
+    stack: media
+    config: "{{ homelab_stack_dirs.media }}/appdata/sonarr/config.xml"
+  prowlarr:
+    api: v1
+    stack: download
+    config: "{{ homelab_stack_dirs.download }}/appdata/prowlarr/config.xml"
 
 # The apps reach each other by Docker service name and internal port.
 app_config_arrs:
@@ -48,8 +57,11 @@ app_config_bazarr_user_agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36
 
 app_config_jellyfin_client: 'MediaBrowser Client="homelab-ansible", Device="ansible", DeviceId="homelab-ansible", Version="1.0"'
 app_config_jellyfin_settings:
-  - { path: "", settings: { ServerName: "{{ app_config_jellyfin_server_name }}" } }
-  - { path: /encoding, settings: "{{ app_config_jellyfin_encoding }}" }
+  - path: ""
+    settings:
+      ServerName: "{{ app_config_jellyfin_server_name }}"
+  - path: /encoding
+    settings: "{{ app_config_jellyfin_encoding }}"
 
 app_config_recyclarr_small_qualities:
   - HDTV-720p

@@ -26,11 +26,15 @@ vault_github_token: ""
 # (optional, 32 characters, from Profile > Kobo Sync Token) keeps a Kobo syncing after a
 # reinstall; for the shared login give only its name and kobo_token.
 # vault_calibre_users:
-#   - { name: reader, email: reader@example.com, password: "", kobo_token: "" }
+#   - name: reader
+#     email: reader@example.com
+#     password: ""
+#     kobo_token: ""
 # Optional: more Jellyfin users, created when missing. Each gets every library and their own
 # watch history.
 # vault_jellyfin_users:
-#   - { name: viewer, password: "" }
+#   - name: viewer
+#     password: ""
 # With homelab_suggestarr (settings.yml): a free TMDb API key (themoviedb.org, Settings, API),
 # and optionally a Simkl app's Client ID (simkl.com/settings/developer, type "TV, devices &
 # command line") to add your Simkl history, and an OMDb key (omdbapi.com) to filter on IMDb too.

@@ -129,10 +129,22 @@
           url: http://prometheus:9090
           refreshInterval: 300000
           metrics:
-            - { label: Movies, query: 'homelab_media_bytes{dir="movies"}', format: { type: bytes } }
-            - { label: Series, query: 'homelab_media_bytes{dir="series"}', format: { type: bytes } }
-            - { label: Books, query: 'homelab_media_bytes{dir="books"}', format: { type: bytes } }
-            - { label: Free, query: 'node_filesystem_avail_bytes{mountpoint="/"}', format: { type: bytes } }
+            - label: Movies
+              query: 'homelab_media_bytes{dir="movies"}'
+              format:
+                type: bytes
+            - label: Series
+              query: 'homelab_media_bytes{dir="series"}'
+              format:
+                type: bytes
+            - label: Books
+              query: 'homelab_media_bytes{dir="books"}'
+              format:
+                type: bytes
+            - label: Free
+              query: 'node_filesystem_avail_bytes{mountpoint="/"}'
+              format:
+                type: bytes
     # The nightly backup and the weekly check of it (roles/backup).
     - Backup:
         icon: mdi-backup-restore
@@ -141,9 +153,18 @@
           url: http://prometheus:9090
           refreshInterval: 300000
           metrics:
-            - { label: Last backup, query: time() - homelab_backup_success_time, format: { type: duration } }
-            - { label: Last check, query: time() - homelab_backup_verify_success_time, format: { type: duration } }
-            - { label: Size, query: homelab_backup_bytes, format: { type: bytes } }
+            - label: Last backup
+              query: time() - homelab_backup_success_time
+              format:
+                type: duration
+            - label: Last check
+              query: time() - homelab_backup_verify_success_time
+              format:
+                type: duration
+            - label: Size
+              query: homelab_backup_bytes
+              format:
+                type: bytes
 {% endif %}
 {% endif %}
 {% if app_config_github_repo and app_config_github_token %}
@@ -161,6 +182,10 @@
             User-Agent: homelab-homepage
           refreshInterval: 300000
           mappings:
-            - { field: tag_name, label: Release }
-            - { field: published_at, label: Released, format: relativeDate, style: short }
+            - field: tag_name
+              label: Release
+            - field: published_at
+              label: Released
+              format: relativeDate
+              style: short
 {% endif %}

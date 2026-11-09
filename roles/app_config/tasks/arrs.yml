@@ -73,6 +73,12 @@
   loop_control:
     label: "{{ item.name }}"
   when: _app_config_jellyfin_api_key is defined   # set by jellyfin.yml
+  # The Arr checks the connection when it saves, and Jellyfin can answer 503 for a moment (a fresh
+  # install, or right after its settings changed).
+  register: _app_config_arr_jellyfin
+  until: _app_config_arr_jellyfin is succeeded
+  retries: 6
+  delay: 10
 
 # Only the TRaSH profiles from Recyclarr are left to choose from.
 - name: Arr | Remove the stock quality profiles

@@ -12,12 +12,17 @@ backup_dirs=("${stacks[@]}")
 [ -d {{ homelab_data_dir }}/media/books ] && backup_dirs+=({{ homelab_data_dir }}/media/books)
 staging={{ backup_staging_dir }}
 
+# Messages are Telegram HTML, like the autodeploy's: a bold first line, the details, then where to look.
 notify() {
   [ -n "${TELEGRAM_BOT_TOKEN:-}" ] || return 0
   curl -s -o /dev/null --max-time 20 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=$1"
+    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=$1" \
+    --data-urlencode "parse_mode=HTML" --data-urlencode 'link_preview_options={"is_disabled":true}'
 }
-fail() { echo "$1" >&2; notify "❌ Homelab backup to {{ homelab_backup_remote }} failed: $1. journalctl -u homelab-backup"; exit 1; }
+html() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' <<<"$1"; }
+fail() { echo "$1" >&2; notify "❌ <b>Backup failed</b>
+$(html "$1")
+journalctl -u homelab-backup"; exit 1; }
 compose() { for dir in "${stacks[@]}"; do docker compose --project-directory "$dir" "$1"; done; }
 
 # One at a time with the automatic deploys (they skip a check while this holds the lock).

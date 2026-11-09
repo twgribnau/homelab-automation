@@ -31,7 +31,7 @@ jobs:
           PR: ${{ github.event.workflow_run.pull_requests[0].number }}
         shell: python
         run: |
-          import json, os, re, urllib.parse, urllib.request
+          import html, json, os, re, urllib.parse, urllib.request
           env = os.environ
           request = urllib.request.Request(
               f"https://api.github.com/repos/{env['GITHUB_REPOSITORY']}/pulls/{env['PR']}",
@@ -40,7 +40,7 @@ jobs:
           if pr["state"] != "open":
               raise SystemExit
           # Renovate's patch updates merge by themselves (auto-merge is set on the PR).
-          status = "✅ CI passed, merging by itself" if pr["auto_merge"] else "✅ Ready to merge"
+          status = "✅ <b>CI passed, merging by itself</b>" if pr["auto_merge"] else "✅ <b>Ready to merge</b>"
           # Renovate's table rows: | [docker.io/linuxserver/prowlarr](...) | minor | `2.6.5` -> `2.7.0` |
           lines = []
           for row in (pr["body"] or "").splitlines():
@@ -50,8 +50,9 @@ jobs:
               if change and name:
                   lines.append(f"• {name[1].split('/')[-1]}: {change.replace('`', '')}")
           button = {"inline_keyboard": [[{"text": "Open the PR to merge", "url": pr["html_url"]}]]}
-          data = urllib.parse.urlencode({"chat_id": env["CHAT_ID"], "text": "\n".join([f"{status}: {pr['title']}", *lines]),
-                                         "reply_markup": json.dumps(button)}).encode()
+          data = urllib.parse.urlencode({"chat_id": env["CHAT_ID"], "text": "\n".join([status, html.escape(pr["title"]), *map(html.escape, lines)]),
+                                         "parse_mode": "HTML", "reply_markup": json.dumps(button),
+                                         "link_preview_options": json.dumps({"is_disabled": True})}).encode()
           urllib.request.urlopen(f"https://api.telegram.org/bot{env['TOKEN']}/sendMessage", data)
 
   failed:
@@ -63,11 +64,10 @@ jobs:
           TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TEXT: |-
-            ❌ ${{ github.event.workflow_run.name }} failed on ${{ github.event.workflow_run.head_branch }}
+            ❌ <b>${{ github.event.workflow_run.name }} failed on ${{ github.event.workflow_run.head_branch }}</b>
             ${{ github.event.workflow_run.display_title }}
-
             ${{ github.event.workflow_run.html_url }}
         run: |
           curl -sf -o /dev/null "https://api.telegram.org/bot${TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${CHAT_ID}" --data-urlencode "text=${TEXT}" \
+            --data-urlencode "chat_id=${CHAT_ID}" --data-urlencode "text=${TEXT}" --data-urlencode "parse_mode=HTML" \
             --data-urlencode "link_preview_options={\"is_disabled\":true}"

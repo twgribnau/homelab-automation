@@ -81,7 +81,7 @@ done)
 log=$(mktemp)
 trap 'rm -f "$log"' EXIT
 $force && [ -z "$changes" ] && changes="• back to main"
-notify "🔄 Homelab update started
+notify "🔄 <b>Update started</b>
 ${changes}"
 
 # Only new images can change the app data, so only then back up. The apps are stopped
@@ -97,7 +97,9 @@ if ! git diff --quiet HEAD FETCH_HEAD -- 'roles/*_stack/defaults/main.yml'; then
   if [ "$status" -ne 0 ]; then
     echo "$new $config_new" >.failed-commit
     printf '%s\n%s\n%s\n' "$(date '+%F %R')" "$new" "The backup failed" >.last-failure
-    notify "❌ Homelab update skipped: the backup failed. journalctl -u homelab-autodeploy"
+    notify "❌ <b>Update skipped</b>
+Backup failed
+journalctl -u homelab-autodeploy"
     exit 1
   fi
   restic forget --prune --tag pre-deploy --keep-last 5
@@ -107,12 +109,13 @@ git reset --quiet --hard "$new"
 # Fast-forward only: config/ is your own folder, so changes you haven't committed stay.
 if [ "$config_new" != "$config_old" ] && ! git -C config merge --quiet --ff-only "$config_new"; then
   echo "$new $config_new" >.failed-commit
-  notify "❌ Homelab update stopped: your config repo has changes that aren't committed. Commit or undo them in ~/homelab-config."
+  notify "❌ <b>Update stopped</b>
+Uncommitted changes in ~/homelab-config"
   exit 1
 fi
 if deploy; then
   rm -f .failed-commit
-  notify "✅ Homelab updated to $(version HEAD)
+  notify "✅ <b>Updated to <a href=\"$web/commit/$new\">$(version HEAD)</a></b> in $((SECONDS / 60))m $((SECONDS % 60))s
 ${changes}"
   exit 0
 fi
@@ -143,17 +146,21 @@ if $backup; then
   sudo rm -rf "$restore"
 fi
 if [ "$new" = "$old" ]; then
-  notify "❌ Homelab update failed: $(html "${task:-see the log}")
+  notify "❌ <b>Update failed</b>
+$(html "${task:-see the log}")
 $(html "$error")
 ${changes}
-Your config change didn't work: fix it in your config repo. journalctl -u homelab-autodeploy"
+Fix your config repo
+journalctl -u homelab-autodeploy"
   exit 1
 fi
 git reset --quiet --hard "$old"
-if deploy; then result="rolled back to the version before"; else result="the rollback failed too"; fi
+if deploy; then result="Rolled back"; else result="Rollback failed too"; fi
 
-notify "❌ Homelab update failed: $(html "${task:-see the log}")
+notify "❌ <b>Update failed</b>
+$(html "${task:-see the log}")
 $(html "$error")
 ${changes}
-${result}. Merge a fix or revert the PR. journalctl -u homelab-autodeploy"
+${result}: fix or revert the PR
+journalctl -u homelab-autodeploy"
 exit 1

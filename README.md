@@ -74,8 +74,8 @@ so split it up as you like. Leave a file out and that part isn't configured.
 - **`indexers.yml`**: the sites Prowlarr searches. Per site a `name` and its `definition`, the
   file name (without `.yml`) in [Prowlarr's indexer list](https://github.com/Prowlarr/Indexers/tree/master/definitions):
   `- { name: My indexer, definition: <id> }`. Indexers added in Prowlarr itself are kept.
-- **`maintainerr.yml`**: rules for removing what has been watched. The example removes movies 14
-  days and complete seasons 3 days after the last view; paste your own from Maintainerr's
+- **`maintainerr.yml`**: rules for removing what has been watched. The example removes movies 1
+  day and complete seasons 3 days after the last view; paste your own from Maintainerr's
   Rules > Export.
 - **`jellyfin.yml`**: one home screen for every user, profile tiles on the login screen,
   profile pictures (files next to it, e.g. `images/`).

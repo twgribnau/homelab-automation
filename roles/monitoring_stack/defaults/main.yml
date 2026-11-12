@@ -4,6 +4,6 @@ monitoring_stack_images:
   grafana: grafana/grafana:13.3.0
   node_exporter: prom/node-exporter:v1.12.1
   cadvisor: gcr.io/cadvisor/cadvisor:v0.55.1
-  homepage: ghcr.io/gethomepage/homepage:v2.7.0
+  homepage: ghcr.io/gethomepage/homepage:v2.8.0
 
 monitoring_stack_prometheus_retention: 15d

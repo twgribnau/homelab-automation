@@ -1,0 +1,103 @@
+---
+# One language profile in one app (_app_config_arr, _app_config_lang), see language_profiles.yml.
+- name: Language profile | Read the languages
+  ansible.builtin.uri:
+    url: "{{ app_config_urls[_app_config_arr.name] }}/api/v3/language"
+    headers:
+      X-Api-Key: "{{ _app_config_api_keys[_app_config_arr.name] }}"
+  register: _app_config_languages
+  check_mode: false
+  no_log: true
+
+- name: Language profile | Check the language names
+  ansible.builtin.assert:
+    that: item in _app_config_languages.json | map(attribute='name')
+    fail_msg: >-
+      "{{ item }}" is not a language of {{ _app_config_arr.name }}. Use one of:
+      {{ _app_config_languages.json | map(attribute='name') | join(', ') }}
+    quiet: true
+  loop: "{{ _app_config_lang.languages }}"
+
+- name: Language profile | Read the custom formats
+  ansible.builtin.uri:
+    url: "{{ app_config_urls[_app_config_arr.name] }}/api/v3/customformat"
+    headers:
+      X-Api-Key: "{{ _app_config_api_keys[_app_config_arr.name] }}"
+  register: _app_config_formats
+  check_mode: false
+  no_log: true
+
+# "Not X" matches a release that has none of the languages; the profile scores it -10000, so it is
+# rejected and only releases with that language are downloaded.
+- name: Language profile | Custom format
+  vars:
+    _ids: >-
+      {{ dict(_app_config_languages.json | map(attribute='name')
+              | zip(_app_config_languages.json | map(attribute='id'))) }}
+    _specs: >-
+      {%- set out = [] -%}
+      {%- for lang in _app_config_lang.languages -%}
+      {%- set _ = out.append({'name': 'Not ' ~ lang, 'implementation': 'LanguageSpecification', 'negate': true,
+                             'required': true, 'fields': [{'name': 'value', 'value': _ids[lang]}]}) -%}
+      {%- endfor -%}
+      {{- out }}
+  servarr_resource:
+    url: "{{ app_config_urls[_app_config_arr.name] }}"
+    api_key: "{{ _app_config_api_keys[_app_config_arr.name] }}"
+    endpoint: customformat
+    body:
+      name: "Language: Not {{ _app_config_lang.name }}"
+      includeCustomFormatWhenRenaming: false
+      specifications: "{{ _specs }}"
+  when: "'Language: Not ' ~ _app_config_lang.name not in _app_config_formats.json | map(attribute='name')"   # its rules never change
+
+# Read again for the ids of the new formats, and the main profile Recyclarr has filled.
+- name: Language profile | Read the custom formats again
+  ansible.builtin.uri:
+    url: "{{ app_config_urls[_app_config_arr.name] }}/api/v3/customformat"
+    headers:
+      X-Api-Key: "{{ _app_config_api_keys[_app_config_arr.name] }}"
+  register: _app_config_formats
+  check_mode: false
+  no_log: true
+
+- name: Language profile | Read the main profile
+  ansible.builtin.uri:
+    url: "{{ app_config_urls[_app_config_arr.name] }}/api/v3/qualityprofile"
+    headers:
+      X-Api-Key: "{{ _app_config_api_keys[_app_config_arr.name] }}"
+  register: _app_config_profiles
+  check_mode: false
+  no_log: true
+
+# The copy has the main profile's qualities and scores, except for languages: any other language
+# custom format (TRaSH's "Not Original" in Sonarr) goes to 0, ours is set. Radarr also has the
+# language in the profile itself: Any, because TRaSH says it can't be combined with the formats.
+- name: Language profile | The copy of the main profile
+  vars:
+    _main: "{{ _app_config_profiles.json | selectattr('name', 'equalto', app_config_quality_profile) | first }}"
+    _rejected: "Language: Not {{ _app_config_lang.name }}"
+    _scores: "{{ {_rejected: -10000} }}"
+    _known: "{{ _main.formatItems | map(attribute='format') | list }}"
+    _format_items: >-
+      {%- set out = [] -%}
+      {%- for f in _main.formatItems -%}
+      {%- set _ = out.append({'format': f.format, 'name': f.name,
+                             'score': _scores[f.name] if f.name in _scores
+                                      else (0 if f.name.startswith('Language:') else f.score)}) -%}
+      {%- endfor -%}
+      {%- for f in _app_config_formats.json if f.id not in _known -%}
+      {%- set _ = out.append({'format': f.id, 'name': f.name, 'score': _scores.get(f.name, 0)}) -%}
+      {%- endfor -%}
+      {{- out }}
+    _language: "{{ {'language': {'id': -1, 'name': 'Any'}} if _app_config_arr.name == 'radarr' else {} }}"
+    _copied: >-
+      {{ _main | dict2items | rejectattr('key', 'in', ['id', 'name', 'formatItems', 'language'])
+         | items2dict }}
+  servarr_resource:
+    url: "{{ app_config_urls[_app_config_arr.name] }}"
+    api_key: "{{ _app_config_api_keys[_app_config_arr.name] }}"
+    endpoint: qualityprofile
+    body: >-
+      {{ _copied | combine(_language, {'name': app_config_quality_profile ~ ' - ' ~ _app_config_lang.name,
+                                       'formatItems': _format_items}) }}

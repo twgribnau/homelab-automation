@@ -35,6 +35,11 @@
   ansible.builtin.import_tasks: recyclarr.yml
   tags: recyclarr
 
+- name: Language profiles
+  ansible.builtin.import_tasks: language_profiles.yml
+  when: app_config_language_profiles | length > 0
+  tags: recyclarr
+
 - name: Seerr
   ansible.builtin.import_tasks: seerr.yml
   tags:

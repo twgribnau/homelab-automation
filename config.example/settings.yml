@@ -15,6 +15,13 @@ homelab_tailscale: true
 # app_config_bazarr_profile:
 #   name: Dutch and English
 #   languages: [nl, en]
+# An extra quality profile per language, next to the main one (a copy named "HD-1080p - NL"):
+# only releases in that language are downloaded. Pick it in Seerr's request dialog or per title
+# in Radarr and Sonarr, e.g.:
+# app_config_language_profiles:
+#   - name: NL
+#     languages:
+#       - Dutch
 # The country Jellyfin uses for ratings and release dates (default US), e.g.:
 # app_config_jellyfin_country: NL
 # Seerr: discover movies and series in these original languages, and show where they stream:

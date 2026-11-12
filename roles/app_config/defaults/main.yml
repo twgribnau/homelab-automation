@@ -3,6 +3,15 @@
 # and adds a smaller WEB-only one (templates/recyclarr.yml.j2).
 app_config_quality_profile: HD-1080p
 
+# More profiles next to it, one per language you only want to download (language names as Radarr
+# and Sonarr list them). Each is a copy of the main profile named "<main> - <name>" that rejects
+# every release without that language: nothing is downloaded until one turns up. Pick it in
+# Seerr's request dialog or per title in Radarr and Sonarr. The copy is refreshed on every run.
+app_config_language_profiles: []
+#  - name: NL
+#    languages:
+#      - Dutch
+
 # https://trash-guides.info/Downloaders/qBittorrent/
 app_config_qbittorrent_preferences:
   save_path: /data/torrents

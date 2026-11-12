@@ -1,0 +1,16 @@
+---
+# A profile per language (app_config_language_profiles) next to the main one, in Radarr and
+# Sonarr. TRaSH has no ready-made one for most languages; its guide builds them from a custom format
+# (https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/). Recyclarr
+# can't sync that one (TRaSH marks it guide-only), so it is made here. Recyclarr's own cleanup
+# only deletes custom formats it made itself, so these stay.
+# After Recyclarr: the copies start from the profile it has just filled.
+- name: Language profiles | Make them
+  ansible.builtin.include_tasks: language_profile.yml
+  vars:
+    _app_config_arr: "{{ _app_config_pair.0 }}"
+    _app_config_lang: "{{ _app_config_pair.1 }}"
+  loop: "{{ app_config_arrs | product(app_config_language_profiles) | list }}"
+  loop_control:
+    loop_var: _app_config_pair
+    label: "{{ _app_config_pair.0.name }}: {{ _app_config_pair.1.name }}"

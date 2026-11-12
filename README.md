@@ -272,7 +272,7 @@ The linked folders have a short README of their own.
 | Radarr, Sonarr | Hardlinks, root folder, qBittorrent client, Jellyfin library refresh |
 | Prowlarr | Your indexers (`config/indexers.yml`), FlareSolverr, sync to Radarr/Sonarr |
 | Cleanuparr | Your login, qBittorrent, Radarr/Sonarr; removes downloads stuck on metadata (15 min) or stalled (30 min), then Radarr/Sonarr search again |
-| Recyclarr | TRaSH Guides 1080p quality profiles (stock profiles removed), custom formats and naming |
+| Recyclarr | TRaSH Guides 1080p quality profiles (stock profiles removed), custom formats and naming. Optionally one more profile per language (`app_config_language_profiles`, e.g. "HD-1080p - NL": only releases in that language are downloaded; TRaSH has no such profile, so Ansible builds it from TRaSH's language format) |
 | Jellyfin | Admin account, more users (`vault_jellyfin_users`), optionally profile tiles, pictures and one home screen (`config/jellyfin.yml`), plugins (Intro Skipper, Jellyfin Enhanced, Simkl), libraries, hardware transcoding, API key for Radarr/Sonarr |
 | Seerr | Jellyfin login, Radarr/Sonarr as default servers, optionally the discover languages and streaming region (`app_config_seerr_discover`), requests from Jellyfin's search (Jellyfin Enhanced) |
 | Maintainerr | Jellyfin, Radarr, Sonarr, Seerr and Telegram, and your rule groups from `config/maintainerr.yml` (the example removes what has been watched, via a "Leaving soon" collection in Jellyfin). It has no login |
